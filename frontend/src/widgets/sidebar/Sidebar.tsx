@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useFileTreeStore } from '@app/stores/fileTreeStore';
 import { useTabStore } from '@app/stores/tabStore';
 import { FileTree } from '@widgets/file-tree/FileTree';
 import { Icon } from '@uikit/icon';
@@ -27,6 +28,8 @@ interface SidebarProps {
 
 export function Sidebar({ voltId, voltPath, onSearchClick, collapsed, onToggleCollapse }: SidebarProps) {
   const openGraphTab = useTabStore((s) => s.openGraphTab);
+  const startCreate = useFileTreeStore((state) => state.startCreate);
+  const notifyFsMutation = useFileTreeStore((state) => state.notifyFsMutation);
   const [width, setWidth] = useState(getInitialWidth);
   const dragging = useRef(false);
 
@@ -69,7 +72,24 @@ export function Sidebar({ voltId, voltPath, onSearchClick, collapsed, onToggleCo
         <button className={styles.iconButton} onClick={onSearchClick} title="Search">
           <Icon name="search" size={18} />
         </button>
-        <div style={{ flex: 1 }} />
+        {collapsed ? (
+          <button className={styles.iconButton} onClick={() => openGraphTab(voltId)} title="Graph">
+            <Icon name="graph" size={18} />
+          </button>
+        ) : (
+          <>
+            <button className={styles.iconButton} onClick={() => startCreate(voltId, '', false)} title="New note">
+              <Icon name="plus" size={18} />
+            </button>
+            <button className={styles.iconButton} onClick={() => startCreate(voltId, '', true)} title="New folder">
+              <Icon name="folder" size={18} />
+            </button>
+            <button className={styles.iconButton} onClick={() => void notifyFsMutation(voltId, voltPath)} title="Refresh files">
+              <Icon name="refreshCw" size={18} />
+            </button>
+            <div className={styles.spacer} />
+          </>
+        )}
         <button className={styles.iconButton} onClick={onToggleCollapse} title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}>
           <Icon name="panelLeft" size={18} />
         </button>

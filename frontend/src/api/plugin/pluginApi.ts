@@ -1,26 +1,24 @@
 import type { PluginInfo } from './types';
+import { invokeWails } from '@api/wails';
+
+const loadPluginHandler = () => import('../../../wailsjs/go/wailshandler/PluginHandler');
 
 export async function listPlugins(): Promise<PluginInfo[]> {
-  const mod = await import('../../../wailsjs/go/wailshandler/PluginHandler');
-  return mod.ListPlugins();
+  return invokeWails(loadPluginHandler, (mod) => mod.ListPlugins());
 }
 
 export async function loadPluginSource(pluginId: string): Promise<string> {
-  const mod = await import('../../../wailsjs/go/wailshandler/PluginHandler');
-  return mod.LoadPluginSource(pluginId);
+  return invokeWails(loadPluginHandler, (mod) => mod.LoadPluginSource(pluginId));
 }
 
 export async function setPluginEnabled(pluginId: string, enabled: boolean): Promise<void> {
-  const mod = await import('../../../wailsjs/go/wailshandler/PluginHandler');
-  return mod.SetPluginEnabled(pluginId, enabled);
+  return invokeWails(loadPluginHandler, (mod) => mod.SetPluginEnabled(pluginId, enabled));
 }
 
 export async function getPluginData(pluginId: string, key: string): Promise<string> {
-  const mod = await import('../../../wailsjs/go/wailshandler/PluginHandler');
-  return mod.GetPluginData(pluginId, key);
+  return invokeWails(loadPluginHandler, (mod) => mod.GetPluginData(pluginId, key));
 }
 
 export async function setPluginData(pluginId: string, key: string, value: string): Promise<void> {
-  const mod = await import('../../../wailsjs/go/wailshandler/PluginHandler');
-  return mod.SetPluginData(pluginId, key, value);
+  return invokeWails(loadPluginHandler, (mod) => mod.SetPluginData(pluginId, key, value));
 }

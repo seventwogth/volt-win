@@ -1,38 +1,32 @@
 import type { FileEntry } from './types';
-import {
-  ReadNote,
-  SaveNote,
-  ListTree,
-  CreateNote,
-  CreateDirectory,
-  DeleteNote,
-  RenameNote,
-} from '../../../wailsjs/go/wailshandler/NoteHandler';
+import { invokeWails } from '@api/wails';
+
+const loadNoteHandler = () => import('../../../wailsjs/go/wailshandler/NoteHandler');
 
 export async function readNote(voltPath: string, filePath: string): Promise<string> {
-  return ReadNote(voltPath, filePath);
+  return invokeWails(loadNoteHandler, (mod) => mod.ReadNote(voltPath, filePath));
 }
 
 export async function saveNote(voltPath: string, filePath: string, content: string): Promise<void> {
-  return SaveNote(voltPath, filePath, content);
+  return invokeWails(loadNoteHandler, (mod) => mod.SaveNote(voltPath, filePath, content));
 }
 
 export async function listTree(voltPath: string, dirPath: string = ''): Promise<FileEntry[]> {
-  return ListTree(voltPath, dirPath);
+  return invokeWails(loadNoteHandler, (mod) => mod.ListTree(voltPath, dirPath));
 }
 
 export async function createNote(voltPath: string, filePath: string): Promise<void> {
-  return CreateNote(voltPath, filePath);
+  return invokeWails(loadNoteHandler, (mod) => mod.CreateNote(voltPath, filePath));
 }
 
 export async function createDirectory(voltPath: string, dirPath: string): Promise<void> {
-  return CreateDirectory(voltPath, dirPath);
+  return invokeWails(loadNoteHandler, (mod) => mod.CreateDirectory(voltPath, dirPath));
 }
 
 export async function deleteNote(voltPath: string, filePath: string): Promise<void> {
-  return DeleteNote(voltPath, filePath);
+  return invokeWails(loadNoteHandler, (mod) => mod.DeleteNote(voltPath, filePath));
 }
 
 export async function renameNote(voltPath: string, oldPath: string, newPath: string): Promise<void> {
-  return RenameNote(voltPath, oldPath, newPath);
+  return invokeWails(loadNoteHandler, (mod) => mod.RenameNote(voltPath, oldPath, newPath));
 }

@@ -2,6 +2,8 @@ import { useCallback, useEffect, useRef } from 'react';
 import { EditorContent } from '@tiptap/react';
 import { readNote } from '@api/note/noteApi';
 import { copyImage, pickImage, saveImageBase64, base64ToBlobUrl } from '@api/image/imageApi';
+import { useFileTreeStore } from '@app/stores/fileTreeStore';
+import { useTabStore } from '@app/stores/tabStore';
 import { useEditorSetup } from './hooks/useEditorSetup';
 import { useAutoSave } from './hooks/useAutoSave';
 import { useImageResolver } from './hooks/useImageResolver';
@@ -25,19 +27,49 @@ export function EditorPanel({ voltId, voltPath, filePath }: EditorPanelProps) {
   const editor = useEditorSetup();
   const loadedPathRef = useRef<string | null>(null);
   const { resolve, register, unresolveAll, resolveAll, clear } = useImageResolver(voltPath);
+  const notifyFsMutation = useFileTreeStore((state) => state.notifyFsMutation);
+  const pendingRename = useTabStore((state) => state.pendingRenames[voltId] ?? null);
+  const consumePendingRename = useTabStore((state) => state.consumePendingRename);
+  const activeFileTab = useTabStore((state) => {
+    if (!filePath) {
+      return null;
+    }
 
-  useAutoSave({ editor, voltId, voltPath, filePath, transformMarkdown: unresolveAll });
+    const voltTabs = state.tabs[voltId] ?? [];
+    return voltTabs.find((tab) => tab.id === filePath) ?? null;
+  });
+
+  const { save } = useAutoSave({ editor, voltId, voltPath, filePath, transformMarkdown: unresolveAll });
+
+  useEffect(() => {
+    if (filePath) {
+      return;
+    }
+
+    loadedPathRef.current = null;
+    clear();
+  }, [clear, filePath]);
 
   // Load file content
   useEffect(() => {
     if (!editor || !filePath) return;
     if (loadedPathRef.current === filePath) return;
 
-    clear();
     let cancelled = false;
 
     (async () => {
       try {
+        const isRenameTransition = pendingRename?.newPath === filePath && loadedPathRef.current === pendingRename.oldPath;
+        if (isRenameTransition) {
+          if (activeFileTab?.isDirty) {
+            await save();
+          }
+          loadedPathRef.current = filePath;
+          consumePendingRename(voltId, filePath);
+          return;
+        }
+
+        clear();
         const raw = await readNote(voltPath, filePath);
         if (cancelled) return;
         const content = await resolveAll(raw);
@@ -50,7 +82,20 @@ export function EditorPanel({ voltId, voltPath, filePath }: EditorPanelProps) {
     })();
 
     return () => { cancelled = true; };
-  }, [editor, voltPath, filePath, resolveAll, clear]);
+  }, [activeFileTab?.isDirty, clear, consumePendingRename, editor, filePath, pendingRename, resolveAll, save, voltId, voltPath]);
+
+  useEffect(() => {
+    if (!editor || !filePath) {
+      return;
+    }
+
+    const handleSaveEvent = () => {
+      void save();
+    };
+
+    window.addEventListener('volt:save-active-file', handleSaveEvent);
+    return () => window.removeEventListener('volt:save-active-file', handleSaveEvent);
+  }, [editor, filePath, save]);
 
   // Insert image with blob URL
   const insertImage = useCallback(async (relPath: string, existingBlobUrl?: string) => {
@@ -84,7 +129,8 @@ export function EditorPanel({ voltId, voltPath, filePath }: EditorPanelProps) {
             if (!b64) return;
             const relPath = await saveImageBase64(voltPath, file.name, getImageDir(), b64);
             const blobUrl = base64ToBlobUrl(b64, file.type);
-            insertImage(relPath, blobUrl);
+            await insertImage(relPath, blobUrl);
+            void notifyFsMutation(voltId, voltPath);
           } catch (err) {
             console.error('Failed to save dropped image:', err);
           }
@@ -93,7 +139,7 @@ export function EditorPanel({ voltId, voltPath, filePath }: EditorPanelProps) {
         return;
       }
     }
-  }, [voltPath, insertImage]);
+  }, [insertImage, notifyFsMutation, voltId, voltPath]);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     if (e.dataTransfer?.types?.includes('Files')) {
@@ -124,7 +170,8 @@ export function EditorPanel({ voltId, voltPath, filePath }: EditorPanelProps) {
             const fileName = `pasted_${Date.now()}.${ext === 'jpeg' ? 'jpg' : ext}`;
             const relPath = await saveImageBase64(voltPath, fileName, getImageDir(), b64);
             const blobUrl = base64ToBlobUrl(b64, blob.type);
-            insertImage(relPath, blobUrl);
+            await insertImage(relPath, blobUrl);
+            void notifyFsMutation(voltId, voltPath);
           } catch (err) {
             console.error('Failed to save pasted image:', err);
           }
@@ -133,7 +180,7 @@ export function EditorPanel({ voltId, voltPath, filePath }: EditorPanelProps) {
         return;
       }
     }
-  }, [voltPath, insertImage]);
+  }, [insertImage, notifyFsMutation, voltId, voltPath]);
 
   // Listen for slash command image picker event
   useEffect(() => {
@@ -144,7 +191,8 @@ export function EditorPanel({ voltId, voltPath, filePath }: EditorPanelProps) {
         const selectedPath = await pickImage();
         if (selectedPath) {
           const relPath = await copyImage(voltPath, selectedPath, getImageDir());
-          insertImage(relPath);
+          await insertImage(relPath);
+          void notifyFsMutation(voltId, voltPath);
         }
       } catch (e) {
         console.error('Failed to pick image:', e);
@@ -153,7 +201,7 @@ export function EditorPanel({ voltId, voltPath, filePath }: EditorPanelProps) {
 
     window.addEventListener('volt:pick-image', handler);
     return () => window.removeEventListener('volt:pick-image', handler);
-  }, [editor, voltPath, insertImage]);
+  }, [editor, insertImage, notifyFsMutation, voltId, voltPath]);
 
   if (!filePath) {
     return (

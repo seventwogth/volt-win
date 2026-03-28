@@ -1,21 +1,24 @@
+import { invokeWails } from '@api/wails';
+
+const loadImageHandler = () => import('../../../wailsjs/go/wailshandler/ImageHandler');
+
 export async function copyImage(voltPath: string, sourcePath: string, imageDir: string): Promise<string> {
-  const { CopyImage } = await import('../../../wailsjs/go/wailshandler/ImageHandler');
-  return CopyImage(voltPath, sourcePath, imageDir);
+  return invokeWails(loadImageHandler, (mod) => mod.CopyImage(voltPath, sourcePath, imageDir));
 }
 
 export async function saveImageBase64(voltPath: string, fileName: string, imageDir: string, base64Data: string): Promise<string> {
-  const { SaveImageBase64 } = await import('../../../wailsjs/go/wailshandler/ImageHandler');
-  return SaveImageBase64(voltPath, fileName, imageDir, base64Data);
+  return invokeWails(
+    loadImageHandler,
+    (mod) => mod.SaveImageBase64(voltPath, fileName, imageDir, base64Data),
+  );
 }
 
 export async function pickImage(): Promise<string> {
-  const { PickImage } = await import('../../../wailsjs/go/wailshandler/ImageHandler');
-  return PickImage();
+  return invokeWails(loadImageHandler, (mod) => mod.PickImage());
 }
 
 export async function readImageBase64(voltPath: string, relPath: string): Promise<string> {
-  const { ReadImageBase64 } = await import('../../../wailsjs/go/wailshandler/ImageHandler');
-  return ReadImageBase64(voltPath, relPath);
+  return invokeWails(loadImageHandler, (mod) => mod.ReadImageBase64(voltPath, relPath));
 }
 
 export function dataUrlToBlobUrl(dataUrl: string): string {

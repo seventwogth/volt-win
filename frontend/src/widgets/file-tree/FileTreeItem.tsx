@@ -1,41 +1,62 @@
 import { useState } from 'react';
 import type { FileEntry } from '@api/note/types';
+import { getEntryDisplayName, isMarkdownName } from '@app/lib/fileTree';
+import { useFileTreeStore } from '@app/stores/fileTreeStore';
+import { useTabStore } from '@app/stores/tabStore';
 import { Icon } from '@uikit/icon';
+import { FileTreeInlineEditor } from './FileTreeInlineEditor';
 import styles from './FileTree.module.scss';
 
+const EMPTY_PATHS = [] as const;
+
 interface FileTreeItemProps {
+  voltId: string;
+  voltPath: string;
   entry: FileEntry;
   depth: number;
-  onFileClick: (filePath: string, fileName: string) => void;
-  onNewFile: (dirPath: string) => void;
-  onNewFolder: (dirPath: string) => void;
-  onDelete: (filePath: string) => void;
-  onRename: (filePath: string) => void;
 }
 
 export function FileTreeItem({
+  voltId,
+  voltPath,
   entry,
   depth,
-  onFileClick,
-  onNewFile,
-  onNewFolder,
-  onDelete,
-  onRename,
 }: FileTreeItemProps) {
-  const [expanded, setExpanded] = useState(false);
+  const expandedPaths = useFileTreeStore((state) => state.expandedPaths[voltId] ?? EMPTY_PATHS);
+  const selectedPath = useFileTreeStore((state) => state.selectedPath[voltId] ?? null);
+  const pendingCreate = useFileTreeStore((state) => state.pendingCreate[voltId] ?? null);
+  const editingItem = useFileTreeStore((state) => state.editingItem[voltId] ?? null);
+  const toggleExpanded = useFileTreeStore((state) => state.toggleExpanded);
+  const setSelectedPath = useFileTreeStore((state) => state.setSelectedPath);
+  const startCreate = useFileTreeStore((state) => state.startCreate);
+  const startRename = useFileTreeStore((state) => state.startRename);
+  const requestDelete = useFileTreeStore((state) => state.requestDelete);
+  const updateEditingValue = useFileTreeStore((state) => state.updateEditingValue);
+  const updatePendingCreateValue = useFileTreeStore((state) => state.updatePendingCreateValue);
+  const commitInlineEdit = useFileTreeStore((state) => state.commitInlineEdit);
+  const cancelInlineEdit = useFileTreeStore((state) => state.cancelInlineEdit);
+  const openTab = useTabStore((state) => state.openTab);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
+  const expanded = expandedPaths.includes(entry.path);
+  const isSelected = selectedPath === entry.path;
+  const isEditing = editingItem?.path === entry.path;
+  const isPendingCreateParent = pendingCreate?.parentPath === entry.path;
+  const displayName = getEntryDisplayName(entry.name, entry.isDir);
+  const iconName = entry.isDir ? (expanded ? 'folderOpen' : 'folder') : (isMarkdownName(entry.name) ? 'fileText' : 'file');
 
   const handleClick = () => {
+    setSelectedPath(voltId, entry.path);
     if (entry.isDir) {
-      setExpanded((prev) => !prev);
+      toggleExpanded(voltId, entry.path);
     } else {
-      onFileClick(entry.path, entry.name);
+      openTab(voltId, entry.path, displayName);
     }
   };
 
   const handleContextMenu = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    setSelectedPath(voltId, entry.path);
     setContextMenu({ x: e.clientX, y: e.clientY });
   };
 
@@ -48,17 +69,31 @@ export function FileTreeItem({
 
   return (
     <div>
-      <div
-        className={styles.item}
-        style={{ paddingLeft: `${depth * 16 + 8}px` }}
-        onClick={handleClick}
-        onContextMenu={handleContextMenu}
-      >
-        <span className={styles.icon}>
-          {entry.isDir ? (expanded ? <Icon name="folderOpen" size={16} /> : <Icon name="folder" size={16} />) : <Icon name="file" size={16} />}
-        </span>
-        <span className={styles.name}>{entry.name}</span>
-      </div>
+      {isEditing && editingItem ? (
+        <FileTreeInlineEditor
+          depth={depth}
+          iconName={iconName}
+          value={editingItem.value}
+          placeholder={entry.isDir ? 'Folder name' : 'File name'}
+          onChange={(value) => updateEditingValue(voltId, value)}
+          onSubmit={async () => {
+            await commitInlineEdit(voltId, voltPath);
+          }}
+          onCancel={() => cancelInlineEdit(voltId)}
+        />
+      ) : (
+        <div
+          className={`${styles.item} ${isSelected ? styles.itemSelected : ''}`}
+          style={{ paddingLeft: `${depth * 16 + 8}px` }}
+          onClick={handleClick}
+          onContextMenu={handleContextMenu}
+        >
+          <span className={styles.icon}>
+            <Icon name={iconName} size={16} />
+          </span>
+          <span className={styles.name}>{displayName}</span>
+        </div>
+      )}
 
       {contextMenu && (
         <>
@@ -71,13 +106,13 @@ export function FileTreeItem({
               <>
                 <button
                   className={styles.menuItem}
-                  onClick={() => handleMenuAction(() => onNewFile(entry.path))}
+                  onClick={() => handleMenuAction(() => startCreate(voltId, entry.path, false))}
                 >
                   New File
                 </button>
                 <button
                   className={styles.menuItem}
-                  onClick={() => handleMenuAction(() => onNewFolder(entry.path))}
+                  onClick={() => handleMenuAction(() => startCreate(voltId, entry.path, true))}
                 >
                   New Folder
                 </button>
@@ -86,13 +121,13 @@ export function FileTreeItem({
             )}
             <button
               className={styles.menuItem}
-              onClick={() => handleMenuAction(() => onRename(entry.path))}
+              onClick={() => handleMenuAction(() => startRename(voltId, entry.path))}
             >
               Rename
             </button>
             <button
               className={`${styles.menuItem} ${styles.menuItemDanger}`}
-              onClick={() => handleMenuAction(() => onDelete(entry.path))}
+              onClick={() => handleMenuAction(() => requestDelete(voltId, entry.path))}
             >
               Delete
             </button>
@@ -100,18 +135,29 @@ export function FileTreeItem({
         </>
       )}
 
-      {entry.isDir && expanded && entry.children && (
+      {entry.isDir && expanded && (
         <div>
-          {entry.children.map((child) => (
+          {isPendingCreateParent && pendingCreate ? (
+            <FileTreeInlineEditor
+              depth={depth + 1}
+              iconName={pendingCreate.isDir ? 'folder' : 'fileText'}
+              value={pendingCreate.value}
+              placeholder={pendingCreate.isDir ? 'Folder name' : 'Note name'}
+              onChange={(value) => updatePendingCreateValue(voltId, value)}
+              onSubmit={async () => {
+                await commitInlineEdit(voltId, voltPath);
+              }}
+              onCancel={() => cancelInlineEdit(voltId)}
+            />
+          ) : null}
+
+          {entry.children?.map((child) => (
             <FileTreeItem
               key={child.path}
+              voltId={voltId}
+              voltPath={voltPath}
               entry={child}
               depth={depth + 1}
-              onFileClick={onFileClick}
-              onNewFile={onNewFile}
-              onNewFolder={onNewFolder}
-              onDelete={onDelete}
-              onRename={onRename}
             />
           ))}
         </div>

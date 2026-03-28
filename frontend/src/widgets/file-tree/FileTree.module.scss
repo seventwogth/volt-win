@@ -1,14 +1,22 @@
 .tree {
-  padding: var(--space-1) 0;
+  display: flex;
+  min-height: 0;
   overflow-y: auto;
   flex: 1;
+}
+
+.list {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  padding: var(--space-1) 0;
 }
 
 .item {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  height: 28px;
+  min-height: 32px;
   padding-right: var(--space-2);
   cursor: pointer;
   border-radius: var(--radius-sm);
@@ -23,6 +31,14 @@
   }
 }
 
+.item-selected {
+  background-color: var(--color-bg-hover);
+}
+
+.item-editing {
+  cursor: text;
+}
+
 .icon {
   font-size: 14px;
   flex-shrink: 0;
@@ -30,9 +46,28 @@
 }
 
 .name {
+  flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.inline-input {
+  flex: 1;
+  width: 100%;
+  min-width: 0;
+  height: 28px;
+  padding: 0 var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+  outline: none;
+
+  &:focus {
+    border-color: var(--color-accent);
+  }
 }
 
 .empty {
@@ -92,4 +127,17 @@
   height: 1px;
   margin: var(--space-1) 0;
   background-color: var(--color-divider);
+}
+
+.delete-message {
+  margin: 0;
+  line-height: 1.5;
+  color: var(--color-text-secondary);
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  margin-top: var(--space-4);
 }

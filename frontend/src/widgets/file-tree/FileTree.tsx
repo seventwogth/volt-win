@@ -1,9 +1,13 @@
-import { useEffect, useState, useCallback } from 'react';
-import type { FileEntry } from '@api/note/types';
-import { listTree, createNote, createDirectory, deleteNote, renameNote } from '@api/note/noteApi';
-import { useTabStore } from '@app/stores/tabStore';
+import { useEffect } from 'react';
+import { findEntryByPath } from '@app/lib/fileTree';
+import { useFileTreeStore } from '@app/stores/fileTreeStore';
+import { Button } from '@uikit/button';
+import { Modal } from '@uikit/modal';
+import { FileTreeInlineEditor } from './FileTreeInlineEditor';
 import { FileTreeItem } from './FileTreeItem';
 import styles from './FileTree.module.scss';
+
+const EMPTY_TREE = [] as const;
 
 interface FileTreeProps {
   voltId: string;
@@ -11,104 +15,122 @@ interface FileTreeProps {
 }
 
 export function FileTree({ voltId, voltPath }: FileTreeProps) {
-  const [tree, setTree] = useState<FileEntry[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const openTab = useTabStore((s) => s.openTab);
-
-  const loadTree = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const entries = await listTree(voltPath);
-      setTree(entries);
-    } catch (e) {
-      setError((e as Error).message);
-    } finally {
-      setLoading(false);
-    }
-  }, [voltPath]);
+  const tree = useFileTreeStore((state) => state.trees[voltId] ?? EMPTY_TREE);
+  const loading = useFileTreeStore((state) => state.loading[voltId] ?? false);
+  const error = useFileTreeStore((state) => state.error[voltId] ?? null);
+  const pendingCreate = useFileTreeStore((state) => state.pendingCreate[voltId] ?? null);
+  const pendingDelete = useFileTreeStore((state) => state.pendingDelete[voltId] ?? null);
+  const selectedPath = useFileTreeStore((state) => state.selectedPath[voltId] ?? null);
+  const loadTree = useFileTreeStore((state) => state.loadTree);
+  const notifyFsMutation = useFileTreeStore((state) => state.notifyFsMutation);
+  const startRename = useFileTreeStore((state) => state.startRename);
+  const updatePendingCreateValue = useFileTreeStore((state) => state.updatePendingCreateValue);
+  const commitInlineEdit = useFileTreeStore((state) => state.commitInlineEdit);
+  const cancelInlineEdit = useFileTreeStore((state) => state.cancelInlineEdit);
+  const cancelDelete = useFileTreeStore((state) => state.cancelDelete);
+  const confirmDelete = useFileTreeStore((state) => state.confirmDelete);
 
   useEffect(() => {
-    loadTree();
-  }, [loadTree]);
+    void loadTree(voltId, voltPath).catch(() => undefined);
+  }, [loadTree, voltId, voltPath]);
 
-  const handleFileClick = (filePath: string, fileName: string) => {
-    openTab(voltId, filePath, fileName);
-  };
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'F2') {
+        return;
+      }
 
-  const handleNewFile = async (dirPath: string) => {
-    const name = window.prompt('File name (e.g. note.md):');
-    if (!name) return;
-    try {
-      const filePath = dirPath ? `${dirPath}/${name}` : name;
-      await createNote(voltPath, filePath);
-      await loadTree();
-    } catch (e) {
-      console.error('Failed to create file:', e);
-    }
-  };
+      const target = event.target as HTMLElement | null;
+      if (target?.tagName === 'INPUT' || target?.tagName === 'TEXTAREA' || target?.isContentEditable) {
+        return;
+      }
 
-  const handleNewFolder = async (dirPath: string) => {
-    const name = window.prompt('Folder name:');
-    if (!name) return;
-    try {
-      const folderPath = dirPath ? `${dirPath}/${name}` : name;
-      await createDirectory(voltPath, folderPath);
-      await loadTree();
-    } catch (e) {
-      console.error('Failed to create folder:', e);
-    }
-  };
+      if (!selectedPath || pendingCreate) {
+        return;
+      }
 
-  const handleDelete = async (filePath: string) => {
-    const confirmed = window.confirm(`Delete "${filePath}"?`);
-    if (!confirmed) return;
-    try {
-      await deleteNote(voltPath, filePath);
-      await loadTree();
-    } catch (e) {
-      console.error('Failed to delete:', e);
-    }
-  };
+      const entry = findEntryByPath(tree, selectedPath);
+      if (!entry) {
+        return;
+      }
 
-  const handleRename = async (filePath: string) => {
-    const newName = window.prompt('New name:', filePath);
-    if (!newName || newName === filePath) return;
-    try {
-      await renameNote(voltPath, filePath, newName);
-      await loadTree();
-    } catch (e) {
-      console.error('Failed to rename:', e);
-    }
-  };
+      event.preventDefault();
+      startRename(voltId, selectedPath);
+    };
 
-  if (loading && tree.length === 0) {
-    return <div className={styles.empty}>Loading...</div>;
-  }
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [pendingCreate, selectedPath, startRename, tree, voltId]);
 
-  if (error) {
-    return <div className={styles.error}>{error}</div>;
-  }
-
-  if (tree.length === 0) {
-    return <div className={styles.empty}>No files yet</div>;
-  }
+  const showRootCreate = pendingCreate?.parentPath === '';
 
   return (
-    <div className={styles.tree}>
-      {tree.map((entry) => (
-        <FileTreeItem
-          key={entry.path}
-          entry={entry}
-          depth={0}
-          onFileClick={handleFileClick}
-          onNewFile={handleNewFile}
-          onNewFolder={handleNewFolder}
-          onDelete={handleDelete}
-          onRename={handleRename}
-        />
-      ))}
-    </div>
+    <>
+      <div className={styles.tree}>
+        {loading && tree.length === 0 && !showRootCreate ? (
+          <div className={styles.empty}>Loading...</div>
+        ) : null}
+
+        {error ? (
+          <div className={styles.error}>{error}</div>
+        ) : null}
+
+        {!error && tree.length === 0 && !showRootCreate && !loading ? (
+          <div className={styles.empty}>No files yet</div>
+        ) : null}
+
+        {(tree.length > 0 || showRootCreate) && !error ? (
+          <div className={styles.list}>
+            {showRootCreate && pendingCreate ? (
+              <FileTreeInlineEditor
+                depth={0}
+                iconName={pendingCreate.isDir ? 'folder' : 'fileText'}
+                value={pendingCreate.value}
+                placeholder={pendingCreate.isDir ? 'Folder name' : 'Note name'}
+                onChange={(value) => updatePendingCreateValue(voltId, value)}
+                onSubmit={async () => {
+                  await commitInlineEdit(voltId, voltPath);
+                }}
+                onCancel={() => cancelInlineEdit(voltId)}
+              />
+            ) : null}
+
+            {tree.map((entry) => (
+              <FileTreeItem
+                key={entry.path}
+                voltId={voltId}
+                voltPath={voltPath}
+                entry={entry}
+                depth={0}
+              />
+            ))}
+          </div>
+        ) : null}
+      </div>
+
+      <Modal
+        isOpen={Boolean(pendingDelete)}
+        onClose={() => cancelDelete(voltId)}
+        title={pendingDelete?.isDir ? 'Delete folder' : 'Delete file'}
+      >
+        <p className={styles.deleteMessage}>
+          Delete "{pendingDelete?.name}"? This action cannot be undone.
+        </p>
+        <div className={styles.modalActions}>
+          <Button variant="ghost" size="md" onClick={() => cancelDelete(voltId)}>
+            Cancel
+          </Button>
+          <Button
+            variant="danger"
+            size="md"
+            onClick={() => {
+              void confirmDelete(voltId, voltPath);
+            }}
+          >
+            Delete
+          </Button>
+        </div>
+      </Modal>
+    </>
   );
 }

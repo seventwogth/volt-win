@@ -1,7 +1,6 @@
 import { useEffect } from 'react';
+import { useFileTreeStore } from '@app/stores/fileTreeStore';
 import { useTabStore } from '@app/stores/tabStore';
-import { saveNote } from '@api/note/noteApi';
-import { createNote } from '@api/note/noteApi';
 
 interface UseKeyboardShortcutsOptions {
   voltId: string;
@@ -42,11 +41,7 @@ export function useKeyboardShortcuts({ voltId, voltPath }: UseKeyboardShortcutsO
         }
         case 'n': {
           e.preventDefault();
-          const timestamp = Date.now();
-          const filePath = `Untitled-${timestamp}.md`;
-          createNote(voltPath, filePath).then(() => {
-            useTabStore.getState().openTab(voltId, filePath, `Untitled-${timestamp}`);
-          });
+          useFileTreeStore.getState().startCreate(voltId, '', false);
           break;
         }
       }

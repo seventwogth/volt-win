@@ -1,6 +1,8 @@
 import type { SearchResult } from './types';
+import { invokeWails } from '@api/wails';
+
+const loadSearchHandler = () => import('../../../wailsjs/go/wailshandler/SearchHandler');
 
 export async function searchFiles(voltPath: string, query: string): Promise<SearchResult[]> {
-  const { SearchFiles } = await import('../../../wailsjs/go/wailshandler/SearchHandler');
-  return SearchFiles(voltPath, query);
+  return invokeWails(loadSearchHandler, (mod) => mod.SearchFiles(voltPath, query));
 }
