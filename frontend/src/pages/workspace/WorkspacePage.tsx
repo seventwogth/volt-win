@@ -6,6 +6,7 @@ import { Sidebar } from '@widgets/sidebar/Sidebar';
 import { FileTabs } from '@widgets/file-tabs/FileTabs';
 import { EditorPanel } from '@widgets/editor-panel/EditorPanel';
 import { GraphView } from '@widgets/graph-view/GraphView';
+import { ImageViewer } from '@widgets/image-viewer/ImageViewer';
 import { SearchPopup } from '@widgets/search-popup/SearchPopup';
 import { loadAllPlugins, unloadAllPlugins } from '@app/plugins/pluginLoader';
 import { useDoubleShift } from '../../hooks/useDoubleShift';
@@ -99,6 +100,8 @@ export function WorkspacePage() {
 
   const isGraphTab = activeTab?.type === 'graph';
   const activeFilePath = isGraphTab ? null : (activeTabId ?? null);
+  const imageExtensions = ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg', '.bmp', '.ico'];
+  const isImageFile = activeFilePath != null && imageExtensions.some((ext) => activeFilePath.toLowerCase().endsWith(ext));
 
   return (
     <div className={styles.layout}>
@@ -113,6 +116,8 @@ export function WorkspacePage() {
         <FileTabs voltId={voltId} />
         {isGraphTab ? (
           <GraphView voltPath={workspace.voltPath} onNodeOpen={handleGraphNodeOpen} />
+        ) : isImageFile ? (
+          <ImageViewer voltPath={workspace.voltPath} filePath={activeFilePath} />
         ) : (
           <EditorPanel
             voltId={voltId}
