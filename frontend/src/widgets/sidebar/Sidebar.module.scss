@@ -17,6 +17,10 @@
   border-bottom: 1px solid var(--color-divider);
 }
 
+.spacer {
+  flex: 1;
+}
+
 .icon-button {
   display: flex;
   align-items: center;
