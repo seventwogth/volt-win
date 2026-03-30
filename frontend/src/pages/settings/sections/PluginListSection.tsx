@@ -2,10 +2,12 @@ import type { PluginInfo } from '@shared/api/plugin';
 import { Toggle } from '@shared/ui/toggle';
 import { Button } from '@shared/ui/button';
 import { useI18n } from '@app/providers/I18nProvider';
+import { BrowserOpenURL } from '../../../../wailsjs/runtime/runtime';
 import styles from '../SettingsPage.module.scss';
 
 interface PluginListSectionProps {
   plugins: PluginInfo[];
+  pluginsDirectory: string;
   importingPlugin: boolean;
   busyPluginId: string | null;
   deletingPluginId: string | null;
@@ -16,6 +18,7 @@ interface PluginListSectionProps {
 
 export function PluginListSection({
   plugins,
+  pluginsDirectory,
   importingPlugin,
   busyPluginId,
   deletingPluginId,
@@ -24,6 +27,13 @@ export function PluginListSection({
   onRequestDelete,
 }: PluginListSectionProps) {
   const { t } = useI18n();
+  const handleOpenPluginsDirectory = () => {
+    if (!pluginsDirectory) {
+      return;
+    }
+
+    void BrowserOpenURL(encodeURI(`file://${pluginsDirectory}`));
+  };
 
   return (
     <div className={styles.section}>
@@ -31,15 +41,30 @@ export function PluginListSection({
         <div>
           <h2>{t('settings.plugins.title')}</h2>
           <p className={styles.sectionDescription}>{t('settings.plugins.description')}</p>
+          {pluginsDirectory && (
+            <p className={styles.sectionDescription}>
+              {t('settings.plugins.folderDescription', { path: pluginsDirectory })}
+            </p>
+          )}
         </div>
-        <Button
-          variant="secondary"
-          size="sm"
-          onClick={onImport}
-          disabled={importingPlugin}
-        >
-          {importingPlugin ? t('settings.plugins.importing') : t('settings.plugins.importButton')}
-        </Button>
+        <div className={styles.pluginActions}>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleOpenPluginsDirectory}
+            disabled={!pluginsDirectory}
+          >
+            {t('settings.plugins.openFolderButton')}
+          </Button>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={onImport}
+            disabled={importingPlugin}
+          >
+            {importingPlugin ? t('settings.plugins.importing') : t('settings.plugins.importButton')}
+          </Button>
+        </div>
       </div>
       {plugins.length === 0 ? (
         <p className={styles.emptyMessage}>{t('settings.plugins.empty')}</p>

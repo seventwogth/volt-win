@@ -15,10 +15,6 @@ export async function listTree(voltPath: string, dirPath: string = ''): Promise<
   return invokeWailsSafe(loadFileHandler, (mod) => mod.ListTree(voltPath, dirPath), 'listTree');
 }
 
-export async function createNote(voltPath: string, filePath: string): Promise<void> {
-  return invokeWailsSafe(loadFileHandler, (mod) => mod.CreateNote(voltPath, filePath), 'createNote');
-}
-
 export async function createFile(voltPath: string, filePath: string, content = ''): Promise<void> {
   return invokeWailsSafe(loadFileHandler, (mod) => mod.CreateFile(voltPath, filePath, content), 'createFile');
 }

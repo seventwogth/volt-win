@@ -11,6 +11,23 @@ var (
 	ErrInvalidArchivePath  = errors.New("plugin archive contains an invalid path")
 )
 
+type ErrUnsupportedAPIVersion struct {
+	PluginID   string
+	APIVersion int
+}
+
+func (e *ErrUnsupportedAPIVersion) Error() string {
+	if e == nil {
+		return "plugin api version is unsupported"
+	}
+
+	if e.PluginID == "" {
+		return "plugin api version is unsupported"
+	}
+
+	return `plugin "` + e.PluginID + `" uses unsupported apiVersion`
+}
+
 type ErrAlreadyExists struct {
 	PluginID string
 }

@@ -6,8 +6,6 @@ export function CreateDirectory(arg1:string,arg2:string):Promise<void>;
 
 export function CreateFile(arg1:string,arg2:string,arg3:string):Promise<void>;
 
-export function CreateNote(arg1:string,arg2:string):Promise<void>;
-
 export function DeletePath(arg1:string,arg2:string):Promise<void>;
 
 export function ListTree(arg1:string,arg2:string):Promise<Array<file.FileEntry>>;

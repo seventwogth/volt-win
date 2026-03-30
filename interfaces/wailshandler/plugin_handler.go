@@ -11,22 +11,22 @@ import (
 	coresettings "volt/core/settings"
 )
 
-type PluginHandler struct {
-	manager      *commandbase.Manager
-	localization *coresettings.LocalizationService
-}
-
-func NewPluginHandler(
+func NewPluginCatalogHandler(
 	manager *commandbase.Manager,
 	localization *coresettings.LocalizationService,
-) *PluginHandler {
-	return &PluginHandler{
+) *PluginCatalogHandler {
+	return &PluginCatalogHandler{
 		manager:      manager,
 		localization: localization,
 	}
 }
 
-func (h *PluginHandler) ListPlugins() ([]domain.Plugin, error) {
+type PluginCatalogHandler struct {
+	manager      *commandbase.Manager
+	localization *coresettings.LocalizationService
+}
+
+func (h *PluginCatalogHandler) ListPlugins() ([]domain.Plugin, error) {
 	result, err := commandbase.Execute[commandplugin.ListResponse](
 		context.Background(),
 		h.manager,
@@ -39,20 +39,21 @@ func (h *PluginHandler) ListPlugins() ([]domain.Plugin, error) {
 	return result.Plugins, nil
 }
 
-func (h *PluginHandler) LoadPluginSource(pluginID string) (string, error) {
-	result, err := commandbase.Execute[commandplugin.LoadSourceResponse](
+func (h *PluginCatalogHandler) GetPluginsDirectory() (string, error) {
+	result, err := commandbase.Execute[commandplugin.GetPluginsDirectoryResponse](
 		context.Background(),
 		h.manager,
-		commandplugin.LoadSourceName,
-		commandplugin.LoadSourceRequest{PluginID: pluginID},
+		commandplugin.GetPluginsDirectoryName,
+		commandplugin.GetPluginsDirectoryRequest{},
 	)
 	if err != nil {
-		return "", localizedPluginError(h.localization, "backend.action.loadPlugin", fmtKeyValue("pluginId", pluginID), err)
+		return "", localizedUnexpectedError(h.localization, "backend.action.getPluginsDirectory", nil, err)
 	}
-	return result.Source, nil
+
+	return result.Path, nil
 }
 
-func (h *PluginHandler) SetPluginEnabled(pluginID string, enabled bool) error {
+func (h *PluginCatalogHandler) SetPluginEnabled(pluginID string, enabled bool) error {
 	_, err := commandbase.Execute[commandplugin.SetEnabledResponse](
 		context.Background(),
 		h.manager,
@@ -65,7 +66,7 @@ func (h *PluginHandler) SetPluginEnabled(pluginID string, enabled bool) error {
 	return nil
 }
 
-func (h *PluginHandler) PickPluginArchive() (string, error) {
+func (h *PluginCatalogHandler) PickPluginArchive() (string, error) {
 	selection, err := commandbase.Execute[commandssystem.PickFileResponse](
 		context.Background(),
 		h.manager,
@@ -87,7 +88,7 @@ func (h *PluginHandler) PickPluginArchive() (string, error) {
 	return selection.Path, nil
 }
 
-func (h *PluginHandler) ImportPluginArchive(archivePath string) (domain.Plugin, error) {
+func (h *PluginCatalogHandler) ImportPluginArchive(archivePath string) (domain.Plugin, error) {
 	result, err := commandbase.Execute[commandplugin.ImportArchiveResponse](
 		context.Background(),
 		h.manager,
@@ -101,7 +102,7 @@ func (h *PluginHandler) ImportPluginArchive(archivePath string) (domain.Plugin, 
 	return result.Plugin, nil
 }
 
-func (h *PluginHandler) DeletePlugin(pluginID string) error {
+func (h *PluginCatalogHandler) DeletePlugin(pluginID string) error {
 	_, err := commandbase.Execute[commandplugin.DeleteResponse](
 		context.Background(),
 		h.manager,
@@ -115,7 +116,35 @@ func (h *PluginHandler) DeletePlugin(pluginID string) error {
 	return nil
 }
 
-func (h *PluginHandler) GetPluginData(pluginID, key string) (string, error) {
+type PluginRuntimeHandler struct {
+	manager      *commandbase.Manager
+	localization *coresettings.LocalizationService
+}
+
+func NewPluginRuntimeHandler(
+	manager *commandbase.Manager,
+	localization *coresettings.LocalizationService,
+) *PluginRuntimeHandler {
+	return &PluginRuntimeHandler{
+		manager:      manager,
+		localization: localization,
+	}
+}
+
+func (h *PluginRuntimeHandler) LoadPluginSource(pluginID string) (string, error) {
+	result, err := commandbase.Execute[commandplugin.LoadSourceResponse](
+		context.Background(),
+		h.manager,
+		commandplugin.LoadSourceName,
+		commandplugin.LoadSourceRequest{PluginID: pluginID},
+	)
+	if err != nil {
+		return "", localizedPluginError(h.localization, "backend.action.loadPlugin", fmtKeyValue("pluginId", pluginID), err)
+	}
+	return result.Source, nil
+}
+
+func (h *PluginRuntimeHandler) GetPluginData(pluginID, key string) (string, error) {
 	result, err := commandbase.Execute[commandplugin.GetDataResponse](
 		context.Background(),
 		h.manager,
@@ -128,7 +157,7 @@ func (h *PluginHandler) GetPluginData(pluginID, key string) (string, error) {
 	return result.Value, nil
 }
 
-func (h *PluginHandler) SetPluginData(pluginID, key, value string) error {
+func (h *PluginRuntimeHandler) SetPluginData(pluginID, key, value string) error {
 	_, err := commandbase.Execute[commandplugin.SetDataResponse](
 		context.Background(),
 		h.manager,
@@ -141,7 +170,7 @@ func (h *PluginHandler) SetPluginData(pluginID, key, value string) error {
 	return nil
 }
 
-func (h *PluginHandler) PickPluginFiles(title string, accept []string, multiple bool) ([]string, error) {
+func (h *PluginRuntimeHandler) PickPluginFiles(title string, accept []string, multiple bool) ([]string, error) {
 	resolvedTitle := strings.TrimSpace(title)
 	if resolvedTitle == "" {
 		if multiple {
@@ -168,7 +197,7 @@ func (h *PluginHandler) PickPluginFiles(title string, accept []string, multiple 
 	return result.Paths, nil
 }
 
-func (h *PluginHandler) CopyPluginAsset(voltPath, sourcePath, targetDir string) (string, error) {
+func (h *PluginRuntimeHandler) CopyPluginAsset(voltPath, sourcePath, targetDir string) (string, error) {
 	result, err := commandbase.Execute[commandssystem.CopyAssetResponse](
 		context.Background(),
 		h.manager,

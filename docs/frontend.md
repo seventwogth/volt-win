@@ -1,96 +1,148 @@
 # Фронтенд
 
+## Роль frontend
+
+Frontend в Volt не ограничивается рендерингом экранов. Он одновременно:
+
+- показывает основной UI приложения
+- хранит клиентское состояние в `Zustand`
+- управляет редактором на базе `Tiptap`
+- работает как runtime-слой для плагинов
+- объединяет core-поиск и search providers плагинов
+
+Именно поэтому значимая часть архитектуры находится не только в страницах, но и в `entities/`, `features/` и `shared/lib/plugin-runtime/`.
+
 ## Стек
 
-- React `18`
-- TypeScript
-- Vite
-- Sass Modules
-- Zustand
-- Tiptap
+- `React 18`
+- `TypeScript`
+- `React Router 6`
+- `Vite`
+- `Sass Modules`
+- `Zustand`
+- `Tiptap`
 
-## Ключевая идея
+## Точки входа
 
-Frontend не только рендерит core UI, но и выступает runtime-слоем для плагинов. Именно здесь:
+- [`frontend/src/main.tsx`](../frontend/src/main.tsx) — bootstrap React-приложения
+- [`frontend/src/app/App.tsx`](../frontend/src/app/App.tsx) — корневое приложение и провайдеры
+- [`frontend/src/app/routes/AppRouter.tsx`](../frontend/src/app/routes/AppRouter.tsx) — маршрутизация
 
-- загружаются `main.js` плагинов
-- создаётся ограниченный `api` для каждого plugin instance
-- хранится registry всех UI extensions
-- выполняется safe logging, permission guard и cleanup lifecycle
-
-## Основные страницы
-
-- [`frontend/src/pages/home/HomePage.tsx`](../frontend/src/pages/home/HomePage.tsx) - домашняя страница со списком volt и модальным окном создания
-- [`frontend/src/pages/workspace/WorkspacePage.tsx`](../frontend/src/pages/workspace/WorkspacePage.tsx) - рабочее пространство выбранного volt
-
-## Состояние приложения
-
-Состояние хранится в `Zustand` store:
-
-- `voltStore` - список volt и операции загрузки, создания, удаления
-- `workspaceStore` - открытые рабочие пространства
-- `tabStore` - вкладки файлов и plugin pages, активные элементы и dirty-флаги
-- `pluginRegistry` - команды, pages, slash-команды, toolbar/sidebar/context menu registrations
-- `pluginLogStore` - лог ошибок plugin runtime
-- `pluginPromptStore` - host-side prompt modal для плагинов
-- `pluginSettingsStore` - cached plugin settings values и live change dispatch для `api.settings`
-- `pluginTaskStatusStore` - persistent task statuses для long-running plugin tasks, включая floating cards и editor banners
-- `hostEditorService` - runtime слой для built-in editor kinds, embedded mounts и file viewer delegates
-
-## Виджеты рабочего пространства
-
-Рабочая область собирается из нескольких независимых блоков:
-
-- `Sidebar` - левый activity rail + collapsible sidebar pane
-- `FileTree` - дерево файлов и каталогов
-- `FileTabs` - вкладки открытых файлов
-- `EditorPanel` - редактор заметки
-- `PluginPageHost` - контейнер для полноценных страниц плагинов
-- `WorkspaceToolbar` - зона plugin toolbar buttons
-- `SearchPopup` - всплывающий поиск и command palette (`>`)
-
-## Редактор и поиск
-
-- редактор построен на `Tiptap`
-- автосохранение вызывается из `useAutoSave`
-- editor runtime испускает plugin events `file-open`, `file-save` и `editor-change`
-- slash-меню поддерживает как built-in actions, так и plugin slash commands
-- поиск можно открыть по `Double Shift`
-- также поддерживается `Cmd+K` или `Ctrl+K`
-- если строка поиска начинается с `>`, `SearchPopup` переходит в режим command palette
-
-## Маршрутизация
+## Основные маршруты
 
 Маршруты описаны в [`frontend/src/app/routes/AppRouter.tsx`](../frontend/src/app/routes/AppRouter.tsx):
 
-- `/` - домашняя страница
-- `/workspace/:voltId` - рабочее пространство volt
-- `/workspace/:voltId/plugin/:pageId` - full-screen route page плагина
-- `/settings` - general settings
-- `/settings/plugins` - список плагинов и enable/disable toggle
-- `/settings/plugin/:pluginId` - отдельная host-rendered settings page конкретного плагина
-- `/settings/about` - about page
+- `/` — домашняя страница
+- `/workspace/:voltId` — активный workspace
+- `/workspace/:voltId/plugin/:pageId` — маршрут полноэкранной страницы плагина
+- `/settings` — общие настройки
+- `/settings/shortcuts` — настройки горячих клавиш
+- `/settings/plugins` — список плагинов
+- `/settings/plugin/:pluginId` — host-rendered settings page плагина
+- `/settings/about` — раздел About
 
-## Plugin runtime
+## Основные страницы
 
-Основные runtime-узлы:
+- [`frontend/src/pages/home/HomePage.tsx`](../frontend/src/pages/home/HomePage.tsx) — список volt-хранилищ и создание нового подключения
+- [`frontend/src/pages/workspace/WorkspacePage.tsx`](../frontend/src/pages/workspace/WorkspacePage.tsx) — рабочая область
+- [`frontend/src/pages/workspace/PluginRoutePage.tsx`](../frontend/src/pages/workspace/PluginRoutePage.tsx) — полноэкранные страницы плагинов по отдельному маршруту
+- [`frontend/src/pages/settings/SettingsPage.tsx`](../frontend/src/pages/settings/SettingsPage.tsx) — общий контейнер настроек
 
-- [`frontend/src/shared/lib/plugin-runtime/pluginLoader.ts`](../frontend/src/shared/lib/plugin-runtime/pluginLoader.ts) - загрузка/выгрузка плагинов
-- [`frontend/src/shared/lib/plugin-runtime/pluginApiFactory.ts`](../frontend/src/shared/lib/plugin-runtime/pluginApiFactory.ts) - создание ограниченного API с permission guards
-- [`frontend/src/entities/plugin/model/pluginRegistry.ts`](../frontend/src/entities/plugin/model/pluginRegistry.ts) - реестр UI registration-ов
-- [`frontend/src/entities/plugin/model/pluginSettingsStore.ts`](../frontend/src/entities/plugin/model/pluginSettingsStore.ts) - reserved settings storage, merge с default values и `settings.onChange`
-- [`frontend/src/shared/lib/plugin-runtime/pluginEventBus.ts`](../frontend/src/shared/lib/plugin-runtime/pluginEventBus.ts) - plugin-local события и tracked unsubscribe
-- [`frontend/src/shared/lib/plugin-runtime/editorSessionManager.ts`](../frontend/src/shared/lib/plugin-runtime/editorSessionManager.ts) - note sessions, detached buffers и anchor mapping
-- [`frontend/src/shared/lib/plugin-runtime/hostEditorService.tsx`](../frontend/src/shared/lib/plugin-runtime/hostEditorService.tsx) - host editor mounts, built-in editor surfaces и plugin cleanup
-- [`frontend/src/shared/lib/plugin-runtime/pluginProcessManager.ts`](../frontend/src/shared/lib/plugin-runtime/pluginProcessManager.ts) - frontend bridge для desktop process runs
-- [`frontend/src/features/plugin-task-status/model/pluginTaskStatusStore.ts`](../frontend/src/features/plugin-task-status/model/pluginTaskStatusStore.ts) - host-managed task statuses, surface routing и cleanup lifecycle
+## Состояние приложения
 
-Plugin settings UI теперь не зависит от plugin runtime:
+Ключевые store-ы и runtime-модули:
 
-- schema settings объявляется declarative в `manifest.json -> settings.sections`
-- `SettingsPage` получает список плагинов через `listPlugins()` и строит отдельные top-level пункты меню для плагинов с settings
-- `Plugins` page остаётся toggle-only и не рендерит settings inline
-- host-rendered settings page доступна даже без активного workspace и даже если plugin disabled
-- live apply идёт через reserved storage key `__volt_plugin_settings__` и `settings.onChange(...)`
+- `voltStore` — список volt, загрузка, создание и удаление
+- `workspaceStore` — открытые workspace-ы и активный `voltId`
+- `tabStore` — file tabs и plugin tabs
+- `fileTreeStore` — дерево файлов, inline rename/create/delete и drag-and-drop
+- `pluginRegistry` — регистрации от плагинов: команды, страницы, sidebar, toolbar, file viewers и search providers
+- `pluginLogStore` — runtime-ошибки и предупреждения плагинов
+- `pluginSettingsStore` — значения host-rendered plugin settings
+- `pluginPromptStore` — модальное окно текстового ввода для плагинов
+- `pluginTaskStatusStore` — плавающие статусы и баннеры долгих задач
+- `appSettingsStore` — общие настройки и горячие клавиши
 
-Подробное описание plugin API и формата плагинов вынесено в [docs/plugins.md](plugins.md).
+## Рабочая область
+
+Рабочий экран собирается из нескольких независимых блоков:
+
+- `WorkspaceTabs` — верхняя панель открытых workspace-ов
+- `WorkspaceShell` — каркас активного workspace
+- `FileTree` — дерево файлов и каталогов
+- `FileTabs` — вкладки открытых файлов
+- `EditorPanel` — markdown-редактор
+- `ImageViewer` и plugin file viewers — просмотр нестандартных форматов файлов
+- `PluginPageHost` — контейнер plugin pages в табах
+- `SearchPopup` — поиск и command palette
+
+## Редактор и файл-ориентированные сценарии
+
+Редактор построен на `Tiptap` и дополнен хостовой логикой:
+
+- автосохранение находится в `useAutoSave`
+- slash-меню объединяет built-in действия и plugin slash commands
+- плагинам доступны editor sessions и host editors
+- при изменениях file tree эмитит событие `workspace:path-renamed`, на которое могут подписываться плагины
+
+Это позволяет держать основной markdown-редактор встроенным, а нестандартные сценарии подключать через runtime API.
+
+## Поиск и command palette
+
+Поисковый popup:
+
+- открывается по `Mod+K`
+- дополнительно поддерживает `Double Shift`
+- переключается в режим command palette, если строка начинается с `>`
+- объединяет backend search по `.md` и результаты плагинов через `search.registerTextProvider(...)`
+
+Основная логика находится в [`frontend/src/features/workspace-search/useSearchPopup.ts`](../frontend/src/features/workspace-search/useSearchPopup.ts).
+
+## Настройки
+
+Раздел настроек состоит из нескольких экранов:
+
+- general settings
+- shortcut settings
+- plugin catalog
+- plugin settings pages
+- about
+
+Важно: host-rendered страница настроек плагина доступна только для включённого плагина, у которого есть `manifest.settings.sections`.
+
+## Plugin runtime на стороне frontend
+
+Ключевые runtime-модули:
+
+- [`frontend/src/shared/lib/plugin-runtime/pluginLoader.ts`](../frontend/src/shared/lib/plugin-runtime/pluginLoader.ts) — загрузка и выгрузка плагинов
+- [`frontend/src/shared/lib/plugin-runtime/pluginApiFactory.ts`](../frontend/src/shared/lib/plugin-runtime/pluginApiFactory.ts) — создание host API
+- [`frontend/src/shared/lib/plugin-runtime/pluginApi.ts`](../frontend/src/shared/lib/plugin-runtime/pluginApi.ts) — публичные TypeScript-типы plugin API
+- [`frontend/src/shared/lib/plugin-runtime/pluginEventBus.ts`](../frontend/src/shared/lib/plugin-runtime/pluginEventBus.ts) — отслеживаемые подписки
+- [`frontend/src/shared/lib/plugin-runtime/editorSessionManager.ts`](../frontend/src/shared/lib/plugin-runtime/editorSessionManager.ts) — detached editor sessions
+- [`frontend/src/shared/lib/plugin-runtime/hostEditorService.tsx`](../frontend/src/shared/lib/plugin-runtime/hostEditorService.tsx) — host editors и embedded mounts
+- [`frontend/src/shared/lib/plugin-runtime/pluginProcessManager.ts`](../frontend/src/shared/lib/plugin-runtime/pluginProcessManager.ts) — process bridge
+
+Во frontend также живёт `pluginRegistry`, куда плагины регистрируют:
+
+- commands
+- sidebar panels и sidebar buttons
+- toolbar buttons
+- plugin pages
+- slash commands
+- context menu items
+- file viewers
+- search providers
+
+## Lifecycle плагинов
+
+При открытии workspace frontend:
+
+1. очищает предыдущий plugin runtime
+2. загружает список плагинов из backend
+3. оставляет только `enabled` плагины
+4. загружает `main.js`
+5. исполняет его с ограниченным объектом `api`
+
+При выгрузке runtime снимает listeners, процессы, editor sessions, host editors, task statuses и регистрации плагинов.
+
+Подробный контракт плагинов вынесен в [`plugins.md`](plugins.md).

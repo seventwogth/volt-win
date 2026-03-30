@@ -194,18 +194,20 @@ export type PluginFileViewerConfig =
   | PluginHostEditorFileViewerConfig;
 
 export interface VoltPluginAPI {
-  volt: {
+  fs: {
     read(path: string): Promise<string>;
     write(path: string, content: string): Promise<void>;
-    createFile(path: string, content?: string): Promise<void>;
+    create(path: string, content?: string): Promise<void>;
     list(dirPath?: string): Promise<FileEntry[]>;
+  };
+  workspace: {
     getActivePath(): string | null;
-    getWorkspacePath(): string;
+    getRootPath(): string;
   };
   search: {
-    registerFileTextProvider(config: SearchFileTextProvider): void;
+    registerTextProvider(config: SearchFileTextProvider): void;
   };
-  media: {
+  assets: {
     pickImage(): Promise<string>;
     pickFile(config?: PluginFilePickerConfig): Promise<string | string[] | null>;
     copyAsset(sourcePath: string, targetDir?: string): Promise<string>;
@@ -213,17 +215,15 @@ export interface VoltPluginAPI {
     saveImageBase64(fileName: string, base64: string, targetDir?: string): Promise<string>;
     readImageDataUrl(path: string): Promise<string>;
   };
-  desktop: {
-    process: {
-      start(config: {
-        command: string;
-        args?: string[];
-        stdin?: string;
-        cwd: 'workspace';
-        stdoutMode?: 'raw' | 'lines';
-        stderrMode?: 'raw' | 'lines';
-      }): Promise<DesktopProcessHandle>;
-    };
+  process: {
+    start(config: {
+      command: string;
+      args?: string[];
+      stdin?: string;
+      cwd: 'workspace';
+      stdoutMode?: 'raw' | 'lines';
+      stderrMode?: 'raw' | 'lines';
+    }): Promise<DesktopProcessHandle>;
   };
   ui: {
     promptText(config: {
@@ -254,7 +254,7 @@ export interface VoltPluginAPI {
       hotkey?: string;
       callback: () => void | Promise<void>;
     }): void;
-    registerPluginPage(config: {
+    registerPage(config: {
       id: string;
       title: string;
       mode: 'tab' | 'route';
@@ -291,7 +291,7 @@ export interface VoltPluginAPI {
     openPluginPage(pageId: string): void;
     openFile(path: string): void;
     openExternalUrl(url: string): void;
-    showNotice(message: string, durationMs?: number): void;
+    notify(message: string, durationMs?: number): void;
   };
   editor: {
     captureActiveSession(): Promise<EditorSession | null>;

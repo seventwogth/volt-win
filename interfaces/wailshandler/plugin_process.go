@@ -9,7 +9,7 @@ import (
 	commandssystem "volt/commands/system"
 )
 
-func (h *PluginHandler) StartPluginProcess(
+func (h *PluginRuntimeHandler) StartPluginProcess(
 	runID string,
 	voltPath string,
 	command string,
@@ -54,7 +54,7 @@ func (h *PluginHandler) StartPluginProcess(
 	return localizedUnexpectedError(h.localization, "backend.action.startPluginProcess", nil, err)
 }
 
-func (h *PluginHandler) CancelPluginProcess(runID string) error {
+func (h *PluginRuntimeHandler) CancelPluginProcess(runID string) error {
 	_, err := commandbase.Execute[commandssystem.CancelPluginProcessResponse](
 		context.Background(),
 		h.manager,

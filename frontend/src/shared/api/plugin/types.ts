@@ -40,6 +40,7 @@ export interface PluginManifestSettings {
 }
 
 export interface PluginManifest {
+  apiVersion: number;
   id: string;
   name: string;
   version: string;

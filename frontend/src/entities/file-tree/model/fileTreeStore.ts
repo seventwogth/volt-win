@@ -2,11 +2,11 @@ import { create } from 'zustand';
 import type { FileEntry } from '@shared/api/file/types';
 import {
   createDirectory,
-  createNote,
   deletePath,
   listTree,
   renamePath,
 } from '@shared/api/file';
+import { createNote } from '@shared/api/note';
 import {
   type FileTreeDropPosition,
   buildRenamedPath,

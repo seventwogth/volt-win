@@ -5,7 +5,6 @@ import (
 
 	commandbase "volt/commands"
 	commandfile "volt/commands/file"
-	commandnote "volt/commands/note"
 	domain "volt/core/file"
 	coresettings "volt/core/settings"
 )
@@ -62,19 +61,6 @@ func (h *FileHandler) ListTree(voltPath, dirPath string) ([]domain.FileEntry, er
 		return nil, localizedFileError(h.localization, "backend.action.listTree", quotedPathParam(dirPath), err)
 	}
 	return result.Entries, nil
-}
-
-func (h *FileHandler) CreateNote(voltPath, filePath string) error {
-	_, err := commandbase.Execute[commandnote.CreateNoteResponse](
-		context.Background(),
-		h.manager,
-		commandnote.CreateNoteName,
-		commandnote.CreateNoteRequest{VoltPath: voltPath, FilePath: filePath},
-	)
-	if err != nil {
-		return localizedFileError(h.localization, "backend.action.createNote", quotedPathParam(filePath), err)
-	}
-	return nil
 }
 
 func (h *FileHandler) CreateFile(voltPath, filePath, content string) error {

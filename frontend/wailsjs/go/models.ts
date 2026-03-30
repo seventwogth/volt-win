@@ -170,6 +170,7 @@ export namespace plugin {
 		}
 	}
 	export class PluginManifest {
+	    apiVersion: number;
 	    id: string;
 	    name: string;
 	    version: string;
@@ -184,6 +185,7 @@ export namespace plugin {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.apiVersion = source["apiVersion"];
 	        this.id = source["id"];
 	        this.name = source["name"];
 	        this.version = source["version"];

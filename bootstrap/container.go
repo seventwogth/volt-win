@@ -23,8 +23,10 @@ type Container struct {
 	Lifecycle       *wailshandler.Lifecycle
 	voltHandler     *wailshandler.VoltHandler
 	fileHandler     *wailshandler.FileHandler
+	noteHandler     *wailshandler.NoteHandler
 	searchHandler   *wailshandler.SearchHandler
-	pluginHandler   *wailshandler.PluginHandler
+	pluginCatalog   *wailshandler.PluginCatalogHandler
+	pluginRuntime   *wailshandler.PluginRuntimeHandler
 	imageHandler    *wailshandler.ImageHandler
 	settingsHandler *wailshandler.SettingsHandler
 }
@@ -69,6 +71,7 @@ func NewContainer() *Container {
 		commandfile.NewRenameCommand(fileRepo),
 		commandsearch.NewSearchFilesCommand(fileRepo),
 		commandplugin.NewListCommand(pluginStore),
+		commandplugin.NewGetPluginsDirectoryCommand(pluginStore),
 		commandplugin.NewLoadSourceCommand(pluginStore),
 		commandplugin.NewSetEnabledCommand(pluginStore),
 		commandplugin.NewImportArchiveCommand(pluginStore),
@@ -92,8 +95,10 @@ func NewContainer() *Container {
 	lifecycle := wailshandler.NewLifecycle(runtime)
 	voltHandler := wailshandler.NewVoltHandler(manager, localization)
 	fileHandler := wailshandler.NewFileHandler(manager, localization)
+	noteHandler := wailshandler.NewNoteHandler(manager, localization)
 	searchHandler := wailshandler.NewSearchHandler(manager, localization)
-	pluginHandler := wailshandler.NewPluginHandler(manager, localization)
+	pluginCatalog := wailshandler.NewPluginCatalogHandler(manager, localization)
+	pluginRuntime := wailshandler.NewPluginRuntimeHandler(manager, localization)
 	imageHandler := wailshandler.NewImageHandler(manager, localization)
 	settingsHandler := wailshandler.NewSettingsHandler(manager)
 
@@ -101,8 +106,10 @@ func NewContainer() *Container {
 		Lifecycle:       lifecycle,
 		voltHandler:     voltHandler,
 		fileHandler:     fileHandler,
+		noteHandler:     noteHandler,
 		searchHandler:   searchHandler,
-		pluginHandler:   pluginHandler,
+		pluginCatalog:   pluginCatalog,
+		pluginRuntime:   pluginRuntime,
 		imageHandler:    imageHandler,
 		settingsHandler: settingsHandler,
 	}
@@ -112,8 +119,10 @@ func (c *Container) Bindings() []interface{} {
 	return []interface{}{
 		c.voltHandler,
 		c.fileHandler,
+		c.noteHandler,
 		c.searchHandler,
-		c.pluginHandler,
+		c.pluginCatalog,
+		c.pluginRuntime,
 		c.imageHandler,
 		c.settingsHandler,
 	}

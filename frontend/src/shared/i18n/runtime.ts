@@ -32,6 +32,7 @@ const fallbackMessages: Record<string, string> = {
   'settings.shortcuts.actions.fileCreate': 'Create File',
   'settings.shortcuts.actions.fileRename': 'Rename Selected File',
   'settings.plugins.importButton': 'Import plugin',
+  'settings.plugins.openFolderButton': 'Open plugin folder',
   'settings.plugins.importing': 'Importing...',
   'settings.plugins.importSuccess': 'Plugin "{name}" imported. Review permissions to enable it.',
   'settings.plugins.importEnabledSuccess': 'Plugin "{name}" imported and enabled.',

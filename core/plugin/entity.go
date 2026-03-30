@@ -1,6 +1,7 @@
 package plugin
 
 type PluginManifest struct {
+	APIVersion  int                    `json:"apiVersion"`
 	ID          string                 `json:"id"`
 	Name        string                 `json:"name"`
 	Version     string                 `json:"version"`

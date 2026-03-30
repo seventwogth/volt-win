@@ -7,16 +7,19 @@ export type {
   PluginSettingsSection,
 } from './types';
 export {
+  getPluginsDirectory,
   pickPluginArchive,
   importPluginArchive,
   deletePlugin,
   listPlugins,
-  loadPluginSource,
   setPluginEnabled,
+} from './catalogApi';
+export {
+  loadPluginSource,
   getPluginData,
   setPluginData,
   pickPluginFiles,
   copyPluginAsset,
   startPluginProcess,
   cancelPluginProcess,
-} from './pluginApi';
+} from './runtimeHostApi';

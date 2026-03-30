@@ -1,42 +1,73 @@
 # VOLT
 
-Volt -- это десктопное приложение для работы с локальными markdown-хранилищами. Проект собран на `Wails`, `Go`, `React` и `TypeScript`.
+Volt — десктопное приложение для работы с локальными markdown-хранилищами. Проект собран на `Wails`, `Go`, `React` и `TypeScript` и ориентирован на локальный сценарий работы без отдельной базы данных и без внешнего сервера.
 
-## Возможности
+## Что умеет приложение
 
-- управление локальными volt-хранилищами
-- редактирование markdown-заметок
-- поиск по именам файлов и содержимому
-- расширяемая система плагинов: команды, slash-меню, plugin pages, toolbar, sidebar, context menu
-- граф заметок и другие дополнительные возможности через внешние плагины
+- подключать и открывать локальные volt-хранилища
+- читать, создавать, переименовывать и удалять файлы внутри workspace
+- редактировать markdown-заметки
+- искать по имени файла и содержимому markdown
+- расширяться через плагины: команды, slash-меню, страницы, file viewers, toolbar, sidebar и context menu
+
+## Стек
+
+- backend: `Go` + `Wails`
+- frontend: `React 18`, `TypeScript`, `Vite`, `Zustand`, `Tiptap`
+- desktop runtime: `Wails v2`
 
 ## Быстрый старт
 
-Требования:
+### Требования
 
-- Go `1.26+`
+- Go `1.26+` по `go.mod`
 - Node.js `20+`
-- Wails CLI `v2`
+- Wails CLI `v2.12.0`
 
-Установка Wails CLI:
+### Установка зависимостей
+
+Установите Wails CLI:
 
 ```bash
 go install github.com/wailsapp/wails/v2/cmd/wails@v2.12.0
 ```
 
-Запуск в режиме разработки:
+Установите frontend-зависимости:
+
+```bash
+cd frontend
+npm install
+```
+
+### Запуск в режиме разработки
+
+Из корня проекта:
 
 ```bash
 wails dev
 ```
 
-Сборка:
+### Сборка
 
 ```bash
 wails build
 ```
 
+Сгенерированные артефакты и платформенные файлы лежат в `build/`. Краткое описание каталога есть в [`build/README.md`](build/README.md).
+
+## Структура репозитория
+
+- `bootstrap/` — сборка зависимостей и Wails bindings
+- `commands/` — сценарии приложения
+- `core/` — доменные сущности, контракты и ошибки
+- `infrastructure/` — файловая система, локальное хранение и runtime bridge
+- `interfaces/wailshandler/` — публичный backend API для frontend через Wails
+- `frontend/` — React-приложение, редактор и plugin runtime
+- `docs/` — основная документация по проекту
+
 ## Документация
+
+Основная точка входа — [`docs/README.md`](docs/README.md).
 
 - [Обзор документации](docs/README.md)
 - [Архитектура](docs/architecture.md)

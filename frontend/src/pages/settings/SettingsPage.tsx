@@ -29,6 +29,7 @@ export function SettingsPage({
 
   const {
     plugins,
+    pluginsDirectory,
     pluginsLoaded,
     settingsPlugins,
     confirmPlugin,
@@ -50,6 +51,7 @@ export function SettingsPage({
   );
 
   const hasSelectedPluginSettings = (selectedPlugin?.manifest.settings?.sections ?? []).length > 0;
+  const canOpenSelectedPluginSettings = Boolean(selectedPlugin?.enabled) && hasSelectedPluginSettings;
 
   const navItems = useMemo(() => [
     { key: 'general', label: t('settings.tab.general'), path: '/settings' },
@@ -65,7 +67,7 @@ export function SettingsPage({
 
   const activeNavKey = section === 'plugin' && pluginId ? `plugin:${pluginId}` : section;
 
-  if (section === 'plugin' && pluginsLoaded && (!selectedPlugin || !hasSelectedPluginSettings)) {
+  if (section === 'plugin' && pluginsLoaded && (!selectedPlugin || !canOpenSelectedPluginSettings)) {
     return <Navigate to="/settings/plugins" replace />;
   }
 
@@ -95,6 +97,7 @@ export function SettingsPage({
           {section === 'plugins' && (
             <PluginListSection
               plugins={plugins}
+              pluginsDirectory={pluginsDirectory}
               importingPlugin={importingPlugin}
               busyPluginId={busyPluginId}
               deletingPluginId={deletingPluginId}
@@ -103,7 +106,7 @@ export function SettingsPage({
               onRequestDelete={setPluginPendingDeletion}
             />
           )}
-          {section === 'plugin' && selectedPlugin && hasSelectedPluginSettings && (
+          {section === 'plugin' && selectedPlugin && canOpenSelectedPluginSettings && (
             <PluginSettingsView plugin={selectedPlugin} />
           )}
           {section === 'about' && <AboutSection />}

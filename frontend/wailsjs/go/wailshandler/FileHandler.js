@@ -10,10 +10,6 @@ export function CreateFile(arg1, arg2, arg3) {
   return window['go']['wailshandler']['FileHandler']['CreateFile'](arg1, arg2, arg3);
 }
 
-export function CreateNote(arg1, arg2) {
-  return window['go']['wailshandler']['FileHandler']['CreateNote'](arg1, arg2);
-}
-
 export function DeletePath(arg1, arg2) {
   return window['go']['wailshandler']['FileHandler']['DeletePath'](arg1, arg2);
 }

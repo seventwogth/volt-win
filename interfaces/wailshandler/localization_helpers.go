@@ -58,6 +58,7 @@ func localizedImageError(localization *coresettings.LocalizationService, actionK
 
 func localizedPluginError(localization *coresettings.LocalizationService, actionKey string, params map[string]any, err error) error {
 	var alreadyExistsErr *coreplugin.ErrAlreadyExists
+	var unsupportedVersionErr *coreplugin.ErrUnsupportedAPIVersion
 
 	switch {
 	case errors.Is(err, coreplugin.ErrNotFound):
@@ -76,6 +77,10 @@ func localizedPluginError(localization *coresettings.LocalizationService, action
 		return errors.New(translate(localization, "backend.error.plugin.mainEntryMissing", nil))
 	case errors.Is(err, coreplugin.ErrInvalidArchivePath):
 		return errors.New(translate(localization, "backend.error.plugin.invalidArchivePath", nil))
+	case errors.As(err, &unsupportedVersionErr):
+		return errors.New(translate(localization, "backend.error.plugin.unsupportedApiVersion", map[string]any{
+			"apiVersion": unsupportedVersionErr.APIVersion,
+		}))
 	default:
 		return localizedUnexpectedError(localization, actionKey, params, err)
 	}

@@ -4,7 +4,6 @@ export {
   writeFile,
   listTree,
   createFile,
-  createNote,
   createDirectory,
   deletePath,
   renamePath,

@@ -2,7 +2,14 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useAppSettingsStore } from '@entities/app-settings';
 import { usePluginLogStore, usePluginSettingsStore } from '@entities/plugin';
 import { useWorkspaceStore } from '@entities/workspace';
-import { deletePlugin, importPluginArchive, listPlugins, pickPluginArchive, setPluginEnabled } from '@shared/api/plugin';
+import {
+  deletePlugin,
+  getPluginsDirectory,
+  importPluginArchive,
+  listPlugins,
+  pickPluginArchive,
+  setPluginEnabled,
+} from '@shared/api/plugin';
 import type { PluginInfo } from '@shared/api/plugin';
 import { loadSinglePlugin, unloadSinglePlugin } from '@shared/lib/plugin-runtime';
 import { notifyError, notifySuccess, notifyInfo } from '@shared/ui/toast';
@@ -31,6 +38,7 @@ export function usePluginManagement() {
   const { workspaces, activeWorkspaceId } = useWorkspaceStore();
   const clearPluginShortcutOverrides = useAppSettingsStore((state) => state.clearPluginShortcutOverrides);
   const [plugins, setPlugins] = useState<PluginInfo[]>([]);
+  const [pluginsDirectory, setPluginsDirectory] = useState('');
   const [pluginsLoaded, setPluginsLoaded] = useState(false);
   const [confirmPlugin, setConfirmPlugin] = useState<PluginInfo | null>(null);
   const [pluginPendingDeletion, setPluginPendingDeletion] = useState<PluginInfo | null>(null);
@@ -41,8 +49,12 @@ export function usePluginManagement() {
 
   const fetchPlugins = useCallback(async () => {
     try {
-      const list = await listPlugins();
+      const [list, directory] = await Promise.all([
+        listPlugins(),
+        getPluginsDirectory(),
+      ]);
       setPlugins(sortPlugins(list));
+      setPluginsDirectory(directory);
     } catch (err) {
       console.error('Failed to load plugins:', err);
       notifyError(getErrorMessage(err));
@@ -180,6 +192,7 @@ export function usePluginManagement() {
 
   return {
     plugins,
+    pluginsDirectory,
     pluginsLoaded,
     settingsPlugins,
     confirmPlugin,

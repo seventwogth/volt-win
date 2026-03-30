@@ -126,12 +126,6 @@ export function PluginSettingsView({ plugin }: PluginSettingsViewProps) {
         </div>
       </div>
 
-      {!plugin.enabled && (
-        <div className={styles.pluginSettingsNotice}>
-          {t('settings.plugins.disabledNotice')}
-        </div>
-      )}
-
       {sections.map((section) => (
         <div key={section.id} className={styles.pluginSettingsSectionCard}>
           {section.title && <h3 className={styles.pluginSettingsTitle}>{section.title}</h3>}

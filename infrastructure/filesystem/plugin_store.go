@@ -20,6 +20,7 @@ const (
 	stateFile       = "plugin-state.json"
 	manifestFile    = "manifest.json"
 	dataFile        = "data.json"
+	pluginAPIV4     = 4
 )
 
 type PluginStore struct {
@@ -77,6 +78,10 @@ func (s *PluginStore) ListPlugins() ([]coreplugin.Plugin, error) {
 			continue
 		}
 
+		if err := validateManifest(manifest); err != nil {
+			continue
+		}
+
 		enabled := state[manifest.ID]
 
 		plugins = append(plugins, coreplugin.Plugin{
@@ -91,6 +96,10 @@ func (s *PluginStore) ListPlugins() ([]coreplugin.Plugin, error) {
 	}
 
 	return plugins, nil
+}
+
+func (s *PluginStore) GetPluginsDirectory() string {
+	return s.pluginsDir
 }
 
 func (s *PluginStore) LoadPluginSource(pluginID string) (string, error) {
@@ -146,6 +155,10 @@ func (s *PluginStore) ImportPluginArchive(archivePath string) (coreplugin.Plugin
 
 	if strings.TrimSpace(manifest.Main) == "" {
 		return coreplugin.Plugin{}, coreplugin.ErrMainEntryMissing
+	}
+
+	if err := validateManifest(manifest); err != nil {
+		return coreplugin.Plugin{}, err
 	}
 
 	if _, err := s.findPlugin(manifest.ID); err == nil {
@@ -421,7 +434,38 @@ func extractPluginArchive(archivePath, destination string) (coreplugin.PluginMan
 		return coreplugin.PluginManifest{}, "", coreplugin.ErrInvalidManifest
 	}
 
+	if err := validateManifest(manifest); err != nil {
+		return coreplugin.PluginManifest{}, "", err
+	}
+
 	return manifest, destination, nil
+}
+
+func validateManifest(manifest coreplugin.PluginManifest) error {
+	if strings.TrimSpace(manifest.ID) == "" {
+		return coreplugin.ErrInvalidManifest
+	}
+
+	if strings.TrimSpace(manifest.Name) == "" {
+		return coreplugin.ErrInvalidManifest
+	}
+
+	if strings.TrimSpace(manifest.Version) == "" {
+		return coreplugin.ErrInvalidManifest
+	}
+
+	if strings.TrimSpace(manifest.Main) == "" {
+		return coreplugin.ErrMainEntryMissing
+	}
+
+	if manifest.APIVersion != pluginAPIV4 {
+		return &coreplugin.ErrUnsupportedAPIVersion{
+			PluginID:   manifest.ID,
+			APIVersion: manifest.APIVersion,
+		}
+	}
+
+	return nil
 }
 
 func normalizeArchivePath(raw string) (string, error) {

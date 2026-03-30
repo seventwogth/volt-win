@@ -7,6 +7,7 @@ function isObject(value: unknown): value is Record<string, unknown> {
 function isPluginManifest(value: unknown): value is PluginInfo['manifest'] {
   if (!isObject(value)) return false;
   return (
+    typeof value.apiVersion === 'number' &&
     typeof value.id === 'string' &&
     typeof value.name === 'string' &&
     typeof value.version === 'string' &&

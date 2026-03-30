@@ -264,32 +264,34 @@ export function createPluginAPI(
   });
 
   return {
-    volt: {
+    fs: {
       async read(path: string): Promise<string> {
-        requirePermission('read', 'volt.read');
+        requirePermission('read', 'fs.read');
         return readFile(voltPath, path);
       },
       async write(path: string, content: string): Promise<void> {
-        requirePermission('write', 'volt.write');
+        requirePermission('write', 'fs.write');
         return writeFile(voltPath, path, content);
       },
-      async createFile(path: string, content = ''): Promise<void> {
-        requirePermission('write', 'volt.createFile');
+      async create(path: string, content = ''): Promise<void> {
+        requirePermission('write', 'fs.create');
 
         const normalizedPath = path.trim();
         if (!normalizedPath) {
-          throw reportPluginError(pluginId, 'volt.createFile', new Error('File path is required'));
+          throw reportPluginError(pluginId, 'fs.create', new Error('File path is required'));
         }
 
         await createWorkspaceFile(voltPath, normalizedPath, content);
         await notifyFsMutation();
       },
       async list(dirPath?: string): Promise<FileEntry[]> {
-        requirePermission('read', 'volt.list');
+        requirePermission('read', 'fs.list');
         return listTree(voltPath, dirPath ?? '');
       },
+    },
+    workspace: {
       getActivePath(): string | null {
-        requirePermission('read', 'volt.getActivePath');
+        requirePermission('read', 'workspace.getActivePath');
         const voltId = useWorkspaceStore.getState().activeWorkspaceId;
         if (!voltId) return null;
         const tabState = useTabStore.getState();
@@ -299,14 +301,14 @@ export function createPluginAPI(
         const tab = tabs.find((t) => t.id === activeTabId);
         return tab && tab.type === 'file' ? tab.filePath : null;
       },
-      getWorkspacePath(): string {
-        requirePermission('read', 'volt.getWorkspacePath');
+      getRootPath(): string {
+        requirePermission('read', 'workspace.getRootPath');
         return voltPath;
       },
     },
     search: {
-      registerFileTextProvider(config) {
-        requirePermission('read', 'search.registerFileTextProvider');
+      registerTextProvider(config) {
+        requirePermission('read', 'search.registerTextProvider');
         registerSearchProvider({
           id: namespaceId(config.id),
           pluginId,
@@ -315,12 +317,12 @@ export function createPluginAPI(
         });
       },
     },
-    media: {
+    assets: {
       pickImage() {
         return pickImage();
       },
       async pickFile(config) {
-        requirePermission('external', 'media.pickFile');
+        requirePermission('external', 'assets.pickFile');
         const paths = await pickPluginFiles(
           config?.title ?? '',
           config?.accept ?? [],
@@ -334,43 +336,41 @@ export function createPluginAPI(
         return paths[0] ?? null;
       },
       async copyAsset(sourcePath: string, targetDir?: string) {
-        requirePermission('write', 'media.copyAsset');
+        requirePermission('write', 'assets.copyAsset');
         const path = await copyPluginAsset(voltPath, sourcePath, targetDir ?? '');
         await notifyFsMutation();
         return path;
       },
       async copyImage(sourcePath: string, targetDir?: string) {
-        requirePermission('write', 'media.copyImage');
+        requirePermission('write', 'assets.copyImage');
         const path = await copyImage(voltPath, sourcePath, targetDir ?? '');
         await notifyFsMutation();
         return path;
       },
       async saveImageBase64(fileName: string, base64: string, targetDir?: string) {
-        requirePermission('write', 'media.saveImageBase64');
+        requirePermission('write', 'assets.saveImageBase64');
         const path = await saveImageBase64(voltPath, fileName, targetDir ?? '', base64);
         await notifyFsMutation();
         return path;
       },
       async readImageDataUrl(path: string) {
-        requirePermission('read', 'media.readImageDataUrl');
+        requirePermission('read', 'assets.readImageDataUrl');
         return readImageBase64(voltPath, path);
       },
     },
-    desktop: {
-      process: {
-        async start(config) {
-          requirePermission('process', 'desktop.process.start');
-          if (config.cwd !== 'workspace') {
-            throw reportPluginError(
-              pluginId,
-              'desktop.process.start',
-              new Error('Only cwd="workspace" is supported'),
-            );
-          }
+    process: {
+      async start(config) {
+        requirePermission('process', 'process.start');
+        if (config.cwd !== 'workspace') {
+          throw reportPluginError(
+            pluginId,
+            'process.start',
+            new Error('Only cwd="workspace" is supported'),
+          );
+        }
 
-          const handle = await startPluginProcess(pluginId, voltPath, config);
-          return wrapProcessHandle(handle);
-        },
+        const handle = await startPluginProcess(pluginId, voltPath, config);
+        return wrapProcessHandle(handle);
       },
     },
     ui: {
@@ -413,7 +413,7 @@ export function createPluginAPI(
           callback: wrapCallback(`command:${config.id}`, config.callback),
         });
       },
-      registerPluginPage(config) {
+      registerPage(config) {
         registerPluginPage({
           id: namespaceId(config.id),
           pluginId,
@@ -541,7 +541,7 @@ export function createPluginAPI(
 
         BrowserOpenURL(normalizedUrl);
       },
-      showNotice(message: string, durationMs?: number) {
+      notify(message: string, durationMs?: number) {
         useToastStore.getState().addToast(message, 'info', durationMs ?? 4000);
       },
     },
