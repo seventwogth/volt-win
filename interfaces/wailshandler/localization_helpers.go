@@ -3,7 +3,7 @@ package wailshandler
 import (
 	"errors"
 
-	corenote "volt/core/note"
+	corefile "volt/core/file"
 	coreplugin "volt/core/plugin"
 	coresettings "volt/core/settings"
 	corevolt "volt/core/volt"
@@ -37,16 +37,16 @@ func localizedVoltError(localization *coresettings.LocalizationService, actionKe
 	}
 }
 
-func localizedNoteError(localization *coresettings.LocalizationService, actionKey string, params map[string]any, err error) error {
+func localizedFileError(localization *coresettings.LocalizationService, actionKey string, params map[string]any, err error) error {
 	switch {
-	case errors.Is(err, corenote.ErrFileNotFound):
-		return errors.New(translate(localization, "backend.error.note.notFound", nil))
-	case errors.Is(err, corenote.ErrPermissionDenied):
-		return errors.New(translate(localization, "backend.error.note.permissionDenied", nil))
-	case errors.Is(err, corenote.ErrPathTraversal):
-		return errors.New(translate(localization, "backend.error.note.pathTraversal", nil))
-	case errors.Is(err, corenote.ErrAlreadyExists):
-		return errors.New(translate(localization, "backend.error.note.alreadyExists", nil))
+	case errors.Is(err, corefile.ErrFileNotFound):
+		return errors.New(translate(localization, "backend.error.file.notFound", nil))
+	case errors.Is(err, corefile.ErrPermissionDenied):
+		return errors.New(translate(localization, "backend.error.file.permissionDenied", nil))
+	case errors.Is(err, corefile.ErrPathTraversal):
+		return errors.New(translate(localization, "backend.error.file.pathTraversal", nil))
+	case errors.Is(err, corefile.ErrAlreadyExists):
+		return errors.New(translate(localization, "backend.error.file.alreadyExists", nil))
 	default:
 		return localizedUnexpectedError(localization, actionKey, params, err)
 	}

@@ -2,10 +2,12 @@ package note
 
 import (
 	"context"
+	"path/filepath"
 	"strings"
 
 	commandbase "volt/commands"
-	domain "volt/core/note"
+	domain "volt/core/file"
+	corenote "volt/core/note"
 )
 
 const CreateNoteName = "note.createNote"
@@ -15,7 +17,9 @@ type CreateNoteRequest struct {
 	FilePath string
 }
 
-type CreateNoteResponse struct{}
+type CreateNoteResponse struct {
+	Note corenote.Note `json:"note"`
+}
 
 type CreateNoteCommand struct {
 	repo domain.Repository
@@ -44,5 +48,11 @@ func (c *CreateNoteCommand) Execute(ctx context.Context, req any) (any, error) {
 		return nil, err
 	}
 
-	return CreateNoteResponse{}, nil
+	return CreateNoteResponse{
+		Note: corenote.Note{
+			Path:    filePath,
+			Name:    filepath.Base(filePath),
+			Content: "",
+		},
+	}, nil
 }

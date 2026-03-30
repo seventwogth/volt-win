@@ -1,13 +1,13 @@
-package note
+package file
 
 import (
 	"context"
 
 	commandbase "volt/commands"
-	domain "volt/core/note"
+	domain "volt/core/file"
 )
 
-const SaveName = "note.save"
+const SaveName = "file.write"
 
 type SaveRequest struct {
 	VoltPath string
@@ -17,19 +17,19 @@ type SaveRequest struct {
 
 type SaveResponse struct{}
 
-type SaveCommand struct {
+type WriteFileCommand struct {
 	repo domain.Repository
 }
 
-func NewSaveCommand(repo domain.Repository) *SaveCommand {
-	return &SaveCommand{repo: repo}
+func NewSaveCommand(repo domain.Repository) *WriteFileCommand {
+	return &WriteFileCommand{repo: repo}
 }
 
-func (c *SaveCommand) Name() string {
+func (c *WriteFileCommand) Name() string {
 	return SaveName
 }
 
-func (c *SaveCommand) Execute(ctx context.Context, req any) (any, error) {
+func (c *WriteFileCommand) Execute(ctx context.Context, req any) (any, error) {
 	request, err := commandbase.Decode[SaveRequest](c.Name(), req)
 	if err != nil {
 		return nil, err

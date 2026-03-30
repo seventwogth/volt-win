@@ -89,7 +89,7 @@ Host runtime оборачивает init и callbacks в safe wrappers:
 
 ## Версия API
 
-Текущий контракт это **Plugin Runtime V2**.
+Текущий контракт это **Plugin Runtime V3**.
 
 Важно:
 
@@ -97,6 +97,9 @@ Host runtime оборачивает init и callbacks в safe wrappers:
 - старых helper-ов `editor.getContent()` и `editor.insertAtCursor()` больше нет
 - для работы с заметками теперь используется session-based editor API
 - для long-running local tasks теперь используется generic `desktop.process`
+- plugin-owned file formats больше не реализуются в backend core
+- поиск по plugin-owned форматам делается через `api.search.registerFileTextProvider(...)`
+- best-effort rewrite после rename/move приходит через typed событие `workspace:path-renamed`
 
 ## Формат плагина
 
@@ -174,8 +177,8 @@ api.ui.registerCommand({
 
 Что они дают:
 
-- `read`: `volt.read`, `volt.list`, `volt.getActivePath`
-- `write`: `volt.write`
+- `read`: `volt.read`, `volt.list`, `volt.getActivePath`, `search.registerFileTextProvider`, `media.readImageDataUrl`
+- `write`: `volt.write`, `volt.createFile`, `media.copyImage`, `media.saveImageBase64`
 - `editor`: `editor.captureActiveSession`, `editor.openSession`
 - `process`: `desktop.process.start`
 
@@ -196,15 +199,34 @@ UI методы (`ui.register*`, `ui.promptText`, `ui.createTaskStatus`, `ui.sho
 ```ts
 read(path: string): Promise<string>
 write(path: string, content: string): Promise<void>
-list(dirPath?: string): Promise<unknown[]>
+createFile(path: string, content?: string): Promise<void>
+list(dirPath?: string): Promise<FileEntry[]>
 getActivePath(): string | null
 ```
 
 Поведение:
 
 - все пути относительные к активному `voltPath`
-- backend note repository дополнительно защищает операции от path traversal
+- backend file repository дополнительно защищает операции от path traversal
 - `list()` возвращает рекурсивное дерево без hidden files и directories
+
+### `api.search`
+
+```ts
+registerFileTextProvider(config: {
+  id: string
+  extensions: string[]
+  extractText(input: { filePath: string; content: string }): string | Promise<string>
+}): void
+```
+
+Поведение:
+
+- provider регистрируется host-side и ownership привязывается к `pluginId`
+- registration требует permission `read`
+- backend по-прежнему ищет только по markdown
+- frontend search popup сам читает файлы заявленных extensions, вызывает `extractText(...)` и добавляет name/content matches
+- merge происходит по общей семантике: сначала `isName`, затем content matches, с общим лимитом `50`
 
 ### `api.ui`
 
@@ -299,7 +321,7 @@ openFile(path: string): void
 - `mode: 'tab'` открывает plugin page как workspace tab
 - `mode: 'route'` открывает `/workspace/:voltId/plugin/:pageId`
 - `cleanup` вызывается при unmount и при unload
-- `openFile(path)` открывает обычную заметку во file tab
+- `openFile(path)` открывает указанный файл в обычном workspace tab, включая plugin-owned viewer-ы
 
 #### Slash-команды
 
@@ -450,7 +472,14 @@ Mode-ы:
 ### `api.events`
 
 ```ts
-on(event: string, callback: (...args: unknown[]) => void | Promise<void>): () => void
+on('file-open', callback: (filePath: string) => void | Promise<void>): () => void
+on('file-save', callback: (filePath: string) => void | Promise<void>): () => void
+on('editor-change', callback: () => void | Promise<void>): () => void
+on('workspace:path-renamed', callback: (payload: {
+  oldPath: string
+  newPath: string
+  isDir: boolean
+}) => void | Promise<void>): () => void
 ```
 
 Сейчас core испускает такие события:
@@ -458,6 +487,7 @@ on(event: string, callback: (...args: unknown[]) => void | Promise<void>): () =>
 - `file-open`
 - `file-save`
 - `editor-change`
+- `workspace:path-renamed`
 
 Host автоматически трекает эти listeners по `pluginId` и снимает их при unload.
 

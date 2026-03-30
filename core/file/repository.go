@@ -1,4 +1,4 @@
-package note
+package file
 
 type Repository interface {
 	ReadFile(voltPath, filePath string) (string, error)
@@ -6,6 +6,6 @@ type Repository interface {
 	ListDirectory(voltPath, dirPath string) ([]FileEntry, error)
 	CreateFile(voltPath, filePath string) error
 	CreateDirectory(voltPath, dirPath string) error
-	DeleteFile(voltPath, filePath string) error
-	RenameFile(voltPath, oldPath, newPath string) error
+	DeletePath(voltPath, filePath string) error
+	RenamePath(voltPath, oldPath, newPath string) error
 }

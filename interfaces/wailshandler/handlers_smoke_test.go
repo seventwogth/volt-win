@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	commandbase "volt/commands"
-	commandnote "volt/commands/note"
+	commandfile "volt/commands/file"
 	commandsettings "volt/commands/settings"
 	commandvolt "volt/commands/volt"
 	coresettings "volt/core/settings"
@@ -46,11 +46,11 @@ func TestVoltHandlerListVoltsUsesCommandManager(t *testing.T) {
 	}
 }
 
-func TestNoteHandlerReadNoteUsesCommandManager(t *testing.T) {
+func TestFileHandlerReadFileUsesCommandManager(t *testing.T) {
 	manager := commandbase.MustNewManager(handlerStubCommand{
-		name: commandnote.ReadName,
+		name: commandfile.ReadName,
 		run: func(ctx context.Context, req any) (any, error) {
-			request, ok := req.(commandnote.ReadRequest)
+			request, ok := req.(commandfile.ReadRequest)
 			if !ok {
 				t.Fatalf("unexpected request type %T", req)
 			}
@@ -58,14 +58,14 @@ func TestNoteHandlerReadNoteUsesCommandManager(t *testing.T) {
 				t.Fatalf("request.FilePath = %q, want %q", request.FilePath, "notes/test.md")
 			}
 
-			return commandnote.ReadResponse{Content: "# Test"}, nil
+			return commandfile.ReadResponse{Content: "# Test"}, nil
 		},
 	})
 
-	handler := NewNoteHandler(manager, nil)
-	content, err := handler.ReadNote("/tmp/volt", "notes/test.md")
+	handler := NewFileHandler(manager, nil)
+	content, err := handler.ReadFile("/tmp/volt", "notes/test.md")
 	if err != nil {
-		t.Fatalf("ReadNote() error = %v", err)
+		t.Fatalf("ReadFile() error = %v", err)
 	}
 
 	if content != "# Test" {

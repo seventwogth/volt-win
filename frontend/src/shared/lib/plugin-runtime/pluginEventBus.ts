@@ -1,36 +1,43 @@
-type Callback = (...args: unknown[]) => void;
+import type { PluginEventMap } from './pluginApi';
 
-const listeners = new Map<string, Set<Callback>>();
+type EventName = keyof PluginEventMap;
+type Callback<TEvent extends EventName = EventName> = (payload: PluginEventMap[TEvent]) => void;
+
+const listeners = new Map<EventName, Set<Callback>>();
 const pluginUnsubscribes = new Map<string, Set<() => void>>();
 
-export function emit(event: string, ...args: unknown[]): void {
+export function emit<TEvent extends EventName>(event: TEvent, payload: PluginEventMap[TEvent]): void {
   const set = listeners.get(event);
   if (!set) return;
   for (const cb of set) {
     try {
-      cb(...args);
+      cb(payload);
     } catch (e) {
       console.error(`[pluginEventBus] Error in handler for "${event}":`, e);
     }
   }
 }
 
-export function on(event: string, callback: Callback): () => void {
+export function on<TEvent extends EventName>(event: TEvent, callback: Callback<TEvent>): () => void {
   let set = listeners.get(event);
   if (!set) {
     set = new Set();
     listeners.set(event, set);
   }
-  set.add(callback);
+  set.add(callback as Callback);
   return () => {
-    set!.delete(callback);
+    set!.delete(callback as Callback);
     if (set!.size === 0) {
       listeners.delete(event);
     }
   };
 }
 
-export function onTracked(pluginId: string, event: string, callback: Callback): () => void {
+export function onTracked<TEvent extends EventName>(
+  pluginId: string,
+  event: TEvent,
+  callback: Callback<TEvent>,
+): () => void {
   const unsubscribe = on(event, callback);
   let set = pluginUnsubscribes.get(pluginId);
   if (!set) {

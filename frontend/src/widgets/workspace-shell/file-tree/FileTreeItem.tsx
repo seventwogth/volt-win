@@ -1,5 +1,5 @@
 import { memo, useState } from 'react';
-import type { FileEntry } from '@shared/api/note/types';
+import type { FileEntry } from '@shared/api/file/types';
 import { getEntryDisplayName, isMarkdownName } from '@shared/lib/fileTree';
 import { useI18n } from '@app/providers/I18nProvider';
 import { Icon } from '@shared/ui/icon';

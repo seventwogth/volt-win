@@ -1,4 +1,4 @@
-package note
+package file
 
 import "errors"
 

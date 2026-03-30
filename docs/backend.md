@@ -3,18 +3,19 @@
 ## Основные модули
 
 - `core/volt` - сущность volt и контракт хранилища volt
-- `core/note` - сущности и ошибки для работы с файлами заметок
+- `core/file` - generic файловые сущности, ошибки и контракт repository
+- `core/note` - markdown-specific абстракции заметок и документов, без generic file repository
 - `core/search` - структура результатов поиска
 - `core/plugin` - manifest и metadata плагинов
 - `core/settings` - настройки приложения и доменный сервис локализации
-- `core/boardjson` - чистые helper-функции для `.board` payload
 
 ## Command-слой
 
 В `commands/` лежат отдельные команды:
 
 - `volt/` - создание, удаление и получение списка volt
-- `note/` - чтение, сохранение, создание файлов и каталогов, удаление и переименование
+- `file/` - generic чтение, запись, дерево, удаление и переименование путей внутри workspace
+- `note/` - markdown-specific команды, например создание note с нормализацией `.md`
 - `search/` - полнотекстовый поиск по markdown-файлам
 - `plugin/` - управление плагинами и их данными
 - `settings/` - получение и изменение локализации
@@ -31,7 +32,7 @@
 Handlers группируются по зонам ответственности:
 
 - `VoltHandler`
-- `NoteHandler`
+- `FileHandler`
 - `SearchHandler`
 - `PluginHandler`
 - `ImageHandler`
@@ -39,9 +40,9 @@ Handlers группируются по зонам ответственности
 
 Startup lifecycle вынесен в отдельный `Lifecycle`, который сохраняет `context.Context` во внутренний Wails runtime bridge, но не публикуется во frontend через `Bind`.
 
-## Работа с заметками
+## Работа с файлами
 
-Реализация [`infrastructure/filesystem/note_repository.go`](../infrastructure/filesystem/note_repository.go) выполняет всю файловую работу.
+Реализация [`infrastructure/filesystem/file_repository.go`](../infrastructure/filesystem/file_repository.go) выполняет всю файловую работу.
 
 Особенности:
 
@@ -66,11 +67,13 @@ Startup lifecycle вынесен в отдельный `Lifecycle`, которы
 
 Правила:
 
-- поиск выполняется по файлам `.md` и `.board`
+- backend ищет только по `.md`
 - сначала возвращаются совпадения по имени файла
-- затем совпадения по содержимому markdown или извлеченному тексту board payload
+- затем совпадения по содержимому markdown
 - максимум `50` результатов на запрос
 - максимум `5` совпадений по содержимому на один файл
+
+Plugin-owned форматы больше не индексируются в Go core. Их поиск собирается во frontend через runtime V3 `search.registerFileTextProvider(...)`.
 
 ## Плагины
 
@@ -96,7 +99,7 @@ Backend не исполняет plugin JS и не хранит plugin registry. 
 
 ### Безопасность файлового доступа
 
-Даже если плагин имеет `read` или `write`, фактические файловые операции всё равно идут через note repository:
+Даже если плагин имеет `read` или `write`, фактические файловые операции всё равно идут через file repository:
 
 - путь нормализуется и проверяется через `safePath`
 - выход за пределы активного workspace блокируется

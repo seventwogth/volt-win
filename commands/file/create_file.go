@@ -1,13 +1,13 @@
-package note
+package file
 
 import (
 	"context"
 
 	commandbase "volt/commands"
-	domain "volt/core/note"
+	domain "volt/core/file"
 )
 
-const CreateFileName = "note.createFile"
+const CreateFileName = "file.createFile"
 
 type CreateFileRequest struct {
 	VoltPath string

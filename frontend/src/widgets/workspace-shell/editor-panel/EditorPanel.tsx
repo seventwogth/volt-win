@@ -4,7 +4,7 @@ import { useAppSettingsStore } from '@entities/app-settings';
 import { useActiveFileStore } from '@entities/editor-session';
 import { useFileTreeStore } from '@entities/file-tree';
 import { useTabStore } from '@entities/tab';
-import { readNote } from '@shared/api/note/noteApi';
+import { readFile } from '@shared/api/file';
 import { useI18n } from '@app/providers/I18nProvider';
 import { emit, setEditor } from '@shared/lib/plugin-runtime';
 import { useEditorSetup } from './hooks/useEditorSetup';
@@ -78,7 +78,7 @@ export function EditorPanel({ voltId, voltPath, filePath }: EditorPanelProps) {
         }
 
         clear();
-        const raw = await readNote(voltPath, filePath);
+        const raw = await readFile(voltPath, filePath);
         if (cancelled) return;
         const content = await resolveAll(raw);
         if (cancelled) return;

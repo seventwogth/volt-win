@@ -2,7 +2,9 @@ import type {
   DesktopProcessEvent,
   DesktopProcessHandle,
   EditorSession,
+  PluginEventMap,
   PluginSettingsSection,
+  SearchFileTextProviderInput,
   VoltPluginAPI,
 } from './pluginApi';
 import {
@@ -10,14 +12,16 @@ import {
   registerContextMenuItem,
   registerFileViewer,
   registerPluginPage,
+  registerSearchProvider,
   registerSidebarButton,
   registerSidebarPanel,
   registerSlashCommand,
   registerToolbarButton,
+  usePluginLogStore,
   usePluginRegistryStore,
 } from '@entities/plugin';
 import { onTracked } from './pluginEventBus';
-import { createFile as createWorkspaceFile, listTree, readNote, saveNote } from '@shared/api/note';
+import { createFile as createWorkspaceFile, listTree, readFile, type FileEntry, writeFile } from '@shared/api/file';
 import { copyImage, pickImage, readImageBase64, saveImageBase64 } from '@shared/api/image/imageApi';
 import { getPluginData, setPluginData } from '@shared/api/plugin';
 import { openPluginPrompt } from '@features/plugin-prompt';
@@ -53,6 +57,10 @@ function normalizePluginIcon(icon?: string): IconName {
     return icon as IconName;
   }
   return 'file';
+}
+
+function normalizeExtensions(extensions: string[]): string[] {
+  return extensions.map((extension) => extension.trim().toLowerCase()).filter(Boolean);
 }
 
 export function createPluginAPI(
@@ -149,15 +157,30 @@ export function createPluginAPI(
     close: () => handle.close(),
   });
 
+  const wrapSearchProvider = (
+    providerId: string,
+    extractText: (input: SearchFileTextProviderInput) => string | null | undefined | Promise<string | null | undefined>,
+  ) => async (input: SearchFileTextProviderInput): Promise<string> => {
+    try {
+      const value = await extractText(input);
+      return typeof value === 'string' ? value : '';
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.error(`[Plugin ${pluginId}] searchProvider:${providerId}:extractText:`, err);
+      usePluginLogStore.getState().addEntry(pluginId, 'error', `searchProvider:${providerId}:extractText: ${message}`);
+      return '';
+    }
+  };
+
   return {
     volt: {
       async read(path: string): Promise<string> {
         requirePermission('read', 'volt.read');
-        return readNote(voltPath, path);
+        return readFile(voltPath, path);
       },
       async write(path: string, content: string): Promise<void> {
         requirePermission('write', 'volt.write');
-        return saveNote(voltPath, path, content);
+        return writeFile(voltPath, path, content);
       },
       async createFile(path: string, content = ''): Promise<void> {
         requirePermission('write', 'volt.createFile');
@@ -170,7 +193,7 @@ export function createPluginAPI(
         await createWorkspaceFile(voltPath, normalizedPath, content);
         await notifyFsMutation();
       },
-      async list(dirPath?: string): Promise<unknown[]> {
+      async list(dirPath?: string): Promise<FileEntry[]> {
         requirePermission('read', 'volt.list');
         return listTree(voltPath, dirPath ?? '');
       },
@@ -184,6 +207,17 @@ export function createPluginAPI(
         const tabs = tabState.tabs[voltId] ?? [];
         const tab = tabs.find((t) => t.id === activeTabId);
         return tab && tab.type === 'file' ? tab.filePath : null;
+      },
+    },
+    search: {
+      registerFileTextProvider(config) {
+        requirePermission('read', 'search.registerFileTextProvider');
+        registerSearchProvider({
+          id: namespaceId(config.id),
+          pluginId,
+          extensions: normalizeExtensions(config.extensions),
+          extractText: wrapSearchProvider(config.id, config.extractText),
+        });
       },
     },
     media: {
@@ -387,7 +421,10 @@ export function createPluginAPI(
       },
     },
     events: {
-      on(event: string, callback: (...args: unknown[]) => void | Promise<void>): () => void {
+      on<TEvent extends keyof PluginEventMap>(
+        event: TEvent,
+        callback: (payload: PluginEventMap[TEvent]) => void | Promise<void>,
+      ): () => void {
         return onTracked(pluginId, event, wrapCallback(`event:${event}`, callback));
       },
     },

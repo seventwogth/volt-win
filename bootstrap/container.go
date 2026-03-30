@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 
 	commandbase "volt/commands"
+	commandfile "volt/commands/file"
 	commandnote "volt/commands/note"
 	commandplugin "volt/commands/plugin"
 	commandsearch "volt/commands/search"
@@ -21,7 +22,7 @@ import (
 type Container struct {
 	Lifecycle       *wailshandler.Lifecycle
 	voltHandler     *wailshandler.VoltHandler
-	noteHandler     *wailshandler.NoteHandler
+	fileHandler     *wailshandler.FileHandler
 	searchHandler   *wailshandler.SearchHandler
 	pluginHandler   *wailshandler.PluginHandler
 	imageHandler    *wailshandler.ImageHandler
@@ -45,7 +46,7 @@ func NewContainer() *Container {
 		log.Fatalf("failed to initialize localization service: %v", err)
 	}
 
-	noteRepo := filesystem.NewNoteRepository()
+	fileRepo := filesystem.NewFileRepository()
 	runtime := wailsruntime.NewRuntime()
 
 	pluginStore, err := filesystem.NewPluginStore()
@@ -58,15 +59,15 @@ func NewContainer() *Container {
 		commandvolt.NewListCommand(voltStore),
 		commandvolt.NewCreateCommand(voltStore),
 		commandvolt.NewDeleteCommand(voltStore),
-		commandnote.NewReadCommand(noteRepo),
-		commandnote.NewSaveCommand(noteRepo),
-		commandnote.NewListTreeCommand(noteRepo),
-		commandnote.NewCreateNoteCommand(noteRepo),
-		commandnote.NewCreateFileCommand(noteRepo),
-		commandnote.NewCreateDirectoryCommand(noteRepo),
-		commandnote.NewDeleteCommand(noteRepo),
-		commandnote.NewRenameCommand(noteRepo),
-		commandsearch.NewSearchFilesCommand(),
+		commandfile.NewReadCommand(fileRepo),
+		commandfile.NewSaveCommand(fileRepo),
+		commandfile.NewListTreeCommand(fileRepo),
+		commandnote.NewCreateNoteCommand(fileRepo),
+		commandfile.NewCreateFileCommand(fileRepo),
+		commandfile.NewCreateDirectoryCommand(fileRepo),
+		commandfile.NewDeleteCommand(fileRepo),
+		commandfile.NewRenameCommand(fileRepo),
+		commandsearch.NewSearchFilesCommand(fileRepo),
 		commandplugin.NewListCommand(pluginStore),
 		commandplugin.NewLoadSourceCommand(pluginStore),
 		commandplugin.NewSetEnabledCommand(pluginStore),
@@ -88,7 +89,7 @@ func NewContainer() *Container {
 
 	lifecycle := wailshandler.NewLifecycle(runtime)
 	voltHandler := wailshandler.NewVoltHandler(manager, localization)
-	noteHandler := wailshandler.NewNoteHandler(manager, localization)
+	fileHandler := wailshandler.NewFileHandler(manager, localization)
 	searchHandler := wailshandler.NewSearchHandler(manager, localization)
 	pluginHandler := wailshandler.NewPluginHandler(manager, localization)
 	imageHandler := wailshandler.NewImageHandler(manager, localization)
@@ -97,7 +98,7 @@ func NewContainer() *Container {
 	return &Container{
 		Lifecycle:       lifecycle,
 		voltHandler:     voltHandler,
-		noteHandler:     noteHandler,
+		fileHandler:     fileHandler,
 		searchHandler:   searchHandler,
 		pluginHandler:   pluginHandler,
 		imageHandler:    imageHandler,
@@ -108,7 +109,7 @@ func NewContainer() *Container {
 func (c *Container) Bindings() []interface{} {
 	return []interface{}{
 		c.voltHandler,
-		c.noteHandler,
+		c.fileHandler,
 		c.searchHandler,
 		c.pluginHandler,
 		c.imageHandler,

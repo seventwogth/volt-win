@@ -1,7 +1,7 @@
 import { useEffect, useRef, useCallback } from 'react';
 import type { Editor } from '@tiptap/react';
 import { useTabStore } from '@entities/tab';
-import { saveNote } from '@shared/api/note/noteApi';
+import { writeFile } from '@shared/api/file';
 import { emit } from '@shared/lib/plugin-runtime';
 
 interface UseAutoSaveOptions {
@@ -34,7 +34,7 @@ export function useAutoSave({
       if (transformMarkdown) {
         markdown = transformMarkdown(markdown);
       }
-      await saveNote(voltPath, filePath, markdown);
+      await writeFile(voltPath, filePath, markdown);
       setDirty(voltId, filePath, false);
       emit('file-save', filePath);
     } catch (e) {
@@ -47,7 +47,7 @@ export function useAutoSave({
 
     const handleUpdate = () => {
       setDirty(voltId, filePath, true);
-      emit('editor-change');
+      emit('editor-change', undefined);
 
       if (timerRef.current) {
         clearTimeout(timerRef.current);

@@ -1,13 +1,13 @@
-package note
+package file
 
 import (
 	"context"
 
 	commandbase "volt/commands"
-	domain "volt/core/note"
+	domain "volt/core/file"
 )
 
-const ListTreeName = "note.listTree"
+const ListTreeName = "file.listTree"
 
 type ListTreeRequest struct {
 	VoltPath string

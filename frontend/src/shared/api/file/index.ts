@@ -1,11 +1,11 @@
 export type { FileEntry } from './types';
 export {
-  readNote,
-  saveNote,
+  readFile,
+  writeFile,
   listTree,
   createFile,
   createNote,
   createDirectory,
-  deleteNote,
-  renameNote,
-} from './noteApi';
+  deletePath,
+  renamePath,
+} from './fileApi';

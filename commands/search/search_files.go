@@ -1,14 +1,12 @@
 package search
 
 import (
-	"bufio"
 	"context"
-	"os"
 	"path/filepath"
 	"strings"
 
 	commandbase "volt/commands"
-	"volt/core/boardjson"
+	corefile "volt/core/file"
 	domain "volt/core/search"
 )
 
@@ -25,10 +23,12 @@ type SearchFilesResponse struct {
 	Results []domain.SearchResult
 }
 
-type SearchFilesCommand struct{}
+type SearchFilesCommand struct {
+	repo corefile.Repository
+}
 
-func NewSearchFilesCommand() *SearchFilesCommand {
-	return &SearchFilesCommand{}
+func NewSearchFilesCommand(repo corefile.Repository) *SearchFilesCommand {
+	return &SearchFilesCommand{repo: repo}
 }
 
 func (c *SearchFilesCommand) Name() string {
@@ -45,7 +45,7 @@ func (c *SearchFilesCommand) Execute(ctx context.Context, req any) (any, error) 
 		return SearchFilesResponse{Results: []domain.SearchResult{}}, nil
 	}
 
-	absVolt, err := filepath.Abs(request.VoltPath)
+	entries, err := c.repo.ListDirectory(request.VoltPath, "")
 	if err != nil {
 		return nil, err
 	}
@@ -54,70 +54,8 @@ func (c *SearchFilesCommand) Execute(ctx context.Context, req any) (any, error) 
 
 	var nameMatches []domain.SearchResult
 	var contentMatches []domain.SearchResult
+	searchEntries(entries, request.VoltPath, queryLower, c.repo, &nameMatches, &contentMatches)
 
-	err = filepath.Walk(absVolt, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return nil // skip inaccessible files
-		}
-
-		// Skip hidden directories
-		if info.IsDir() && strings.HasPrefix(info.Name(), ".") {
-			return filepath.SkipDir
-		}
-
-		if info.IsDir() {
-			return nil
-		}
-
-		fileName := info.Name()
-		fileNameLower := strings.ToLower(fileName)
-		isMarkdown := strings.HasSuffix(fileNameLower, ".md")
-		isBoard := strings.HasSuffix(fileNameLower, ".board")
-		if !isMarkdown && !isBoard {
-			return nil
-		}
-
-		// Check total results limit
-		if len(nameMatches)+len(contentMatches) >= maxResults {
-			return filepath.SkipAll
-		}
-
-		relPath, err := filepath.Rel(absVolt, path)
-		if err != nil {
-			return nil
-		}
-
-		// Check file name match
-		if strings.Contains(fileNameLower, queryLower) {
-			nameMatches = append(nameMatches, domain.SearchResult{
-				FilePath: relPath,
-				FileName: fileName,
-				Snippet:  "",
-				Line:     0,
-				IsName:   true,
-			})
-		}
-
-		// Search file content
-		if len(nameMatches)+len(contentMatches) < maxResults {
-			results, err := searchContent(relPath, fileName, path, queryLower, isBoard)
-			if err == nil && len(results) > 0 {
-				remaining := maxResults - len(nameMatches) - len(contentMatches)
-				if len(results) > remaining {
-					results = results[:remaining]
-				}
-				contentMatches = append(contentMatches, results...)
-			}
-		}
-
-		return nil
-	})
-
-	if err != nil {
-		return nil, err
-	}
-
-	// Name matches first, then content matches
 	results := make([]domain.SearchResult, 0, len(nameMatches)+len(contentMatches))
 	results = append(results, nameMatches...)
 	results = append(results, contentMatches...)
@@ -129,28 +67,65 @@ func (c *SearchFilesCommand) Execute(ctx context.Context, req any) (any, error) 
 	return SearchFilesResponse{Results: results}, nil
 }
 
-func searchContent(relPath, fileName, absPath, queryLower string, isBoard bool) ([]domain.SearchResult, error) {
-	if isBoard {
-		return searchBoardContent(relPath, fileName, absPath, queryLower)
-	}
+func searchEntries(
+	entries []corefile.FileEntry,
+	voltPath, queryLower string,
+	repo corefile.Repository,
+	nameMatches, contentMatches *[]domain.SearchResult,
+) {
+	for _, entry := range entries {
+		if len(*nameMatches)+len(*contentMatches) >= maxResults {
+			return
+		}
 
-	return searchMarkdownContent(relPath, fileName, absPath, queryLower)
+		if entry.IsDir {
+			searchEntries(entry.Children, voltPath, queryLower, repo, nameMatches, contentMatches)
+			continue
+		}
+
+		fileName := filepath.Base(entry.Path)
+		fileNameLower := strings.ToLower(fileName)
+		if !strings.HasSuffix(fileNameLower, ".md") {
+			continue
+		}
+
+		if strings.Contains(fileNameLower, queryLower) {
+			*nameMatches = append(*nameMatches, domain.SearchResult{
+				FilePath: entry.Path,
+				FileName: fileName,
+				Snippet:  "",
+				Line:     0,
+				IsName:   true,
+			})
+		}
+
+		if len(*nameMatches)+len(*contentMatches) >= maxResults {
+			return
+		}
+
+		results, err := searchMarkdownContent(entry.Path, fileName, repo, voltPath, queryLower)
+		if err == nil && len(results) > 0 {
+			remaining := maxResults - len(*nameMatches) - len(*contentMatches)
+			if len(results) > remaining {
+				results = results[:remaining]
+			}
+			*contentMatches = append(*contentMatches, results...)
+		}
+	}
 }
 
-func searchMarkdownContent(relPath, fileName, absPath, queryLower string) ([]domain.SearchResult, error) {
-	f, err := os.Open(absPath)
+func searchMarkdownContent(
+	relPath, fileName string,
+	repo corefile.Repository,
+	voltPath, queryLower string,
+) ([]domain.SearchResult, error) {
+	content, err := repo.ReadFile(voltPath, relPath)
 	if err != nil {
 		return nil, err
 	}
-	defer f.Close()
 
 	var results []domain.SearchResult
-	scanner := bufio.NewScanner(f)
-	lineNum := 0
-
-	for scanner.Scan() {
-		lineNum++
-		line := scanner.Text()
+	for lineNum, line := range strings.Split(content, "\n") {
 		lineLower := strings.ToLower(line)
 
 		idx := strings.Index(lineLower, queryLower)
@@ -158,48 +133,20 @@ func searchMarkdownContent(relPath, fileName, absPath, queryLower string) ([]dom
 			continue
 		}
 
-		snippet := extractSnippet(line, idx, len(queryLower))
 		results = append(results, domain.SearchResult{
 			FilePath: relPath,
 			FileName: fileName,
-			Snippet:  snippet,
-			Line:     lineNum,
+			Snippet:  extractSnippet(line, idx, len(queryLower)),
+			Line:     lineNum + 1,
 			IsName:   false,
 		})
 
-		// Limit content matches per file to avoid flooding from a single file
 		if len(results) >= 5 {
 			break
 		}
 	}
 
-	return results, scanner.Err()
-}
-
-func searchBoardContent(relPath, fileName, absPath, queryLower string) ([]domain.SearchResult, error) {
-	raw, err := os.ReadFile(absPath)
-	if err != nil {
-		return nil, err
-	}
-
-	searchText, err := boardjson.ExtractSearchText(string(raw))
-	if err != nil || searchText == "" {
-		return nil, err
-	}
-
-	searchLower := strings.ToLower(searchText)
-	idx := strings.Index(searchLower, queryLower)
-	if idx < 0 {
-		return nil, nil
-	}
-
-	return []domain.SearchResult{{
-		FilePath: relPath,
-		FileName: fileName,
-		Snippet:  extractSnippet(searchText, idx, len(queryLower)),
-		Line:     0,
-		IsName:   false,
-	}}, nil
+	return results, nil
 }
 
 func extractSnippet(line string, matchIdx, matchLen int) string {

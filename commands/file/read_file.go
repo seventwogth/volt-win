@@ -1,13 +1,13 @@
-package note
+package file
 
 import (
 	"context"
 
 	commandbase "volt/commands"
-	domain "volt/core/note"
+	domain "volt/core/file"
 )
 
-const ReadName = "note.read"
+const ReadName = "file.read"
 
 type ReadRequest struct {
 	VoltPath string
@@ -18,19 +18,19 @@ type ReadResponse struct {
 	Content string
 }
 
-type ReadCommand struct {
+type ReadFileCommand struct {
 	repo domain.Repository
 }
 
-func NewReadCommand(repo domain.Repository) *ReadCommand {
-	return &ReadCommand{repo: repo}
+func NewReadCommand(repo domain.Repository) *ReadFileCommand {
+	return &ReadFileCommand{repo: repo}
 }
 
-func (c *ReadCommand) Name() string {
+func (c *ReadFileCommand) Name() string {
 	return ReadName
 }
 
-func (c *ReadCommand) Execute(ctx context.Context, req any) (any, error) {
+func (c *ReadFileCommand) Execute(ctx context.Context, req any) (any, error) {
 	request, err := commandbase.Decode[ReadRequest](c.Name(), req)
 	if err != nil {
 		return nil, err

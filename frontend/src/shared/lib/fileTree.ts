@@ -1,4 +1,4 @@
-import type { FileEntry } from '@shared/api/note/types';
+import type { FileEntry } from '@shared/api/file/types';
 import { translate } from '@shared/i18n';
 import {
   MARKDOWN_EXTENSION,

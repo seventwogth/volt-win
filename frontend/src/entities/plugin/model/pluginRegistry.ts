@@ -1,6 +1,9 @@
 import { create } from 'zustand';
 import type { IconName } from '@shared/ui/icon';
-import type { PluginFileViewerContext } from '@shared/lib/plugin-runtime';
+import type {
+  PluginFileViewerContext,
+  SearchFileTextProviderInput,
+} from '@shared/lib/plugin-runtime';
 import { reportPluginError } from '@shared/lib/plugin-runtime';
 
 export interface RegisteredCommand {
@@ -34,6 +37,13 @@ export interface RegisteredFileViewer {
   icon?: IconName;
   render: (container: HTMLElement, context: PluginFileViewerContext) => void;
   cleanup?: () => void;
+}
+
+export interface RegisteredSearchProvider {
+  id: string;
+  pluginId: string;
+  extensions: string[];
+  extractText: (input: SearchFileTextProviderInput) => Promise<string>;
 }
 
 export interface RegisteredSlashCommand {
@@ -80,6 +90,7 @@ interface PluginRegistryState {
   sidebarPanels: RegisteredSidebarPanel[];
   pluginPages: RegisteredPluginPage[];
   fileViewers: RegisteredFileViewer[];
+  searchProviders: RegisteredSearchProvider[];
   slashCommands: RegisteredSlashCommand[];
   contextMenuItems: RegisteredContextMenuItem[];
   toolbarButtons: RegisteredToolbarButton[];
@@ -88,6 +99,7 @@ interface PluginRegistryState {
   registerSidebarPanel: (panel: RegisteredSidebarPanel) => void;
   registerPluginPage: (page: RegisteredPluginPage) => void;
   registerFileViewer: (viewer: RegisteredFileViewer) => void;
+  registerSearchProvider: (provider: RegisteredSearchProvider) => void;
   registerSlashCommand: (command: RegisteredSlashCommand) => void;
   registerContextMenuItem: (item: RegisteredContextMenuItem) => void;
   registerToolbarButton: (button: RegisteredToolbarButton) => void;
@@ -116,6 +128,7 @@ export const usePluginRegistryStore = create<PluginRegistryState>((set) => ({
   sidebarPanels: [],
   pluginPages: [],
   fileViewers: [],
+  searchProviders: [],
   slashCommands: [],
   contextMenuItems: [],
   toolbarButtons: [],
@@ -124,6 +137,7 @@ export const usePluginRegistryStore = create<PluginRegistryState>((set) => ({
   registerSidebarPanel: (panel) => set((s) => ({ sidebarPanels: [...s.sidebarPanels, panel] })),
   registerPluginPage: (page) => set((s) => ({ pluginPages: [...s.pluginPages, page] })),
   registerFileViewer: (viewer) => set((s) => ({ fileViewers: [...s.fileViewers, viewer] })),
+  registerSearchProvider: (provider) => set((s) => ({ searchProviders: [...s.searchProviders, provider] })),
   registerSlashCommand: (command) => set((s) => ({ slashCommands: [...s.slashCommands, command] })),
   registerContextMenuItem: (item) => set((s) => ({ contextMenuItems: [...s.contextMenuItems, item] })),
   registerToolbarButton: (button) => set((s) => ({ toolbarButtons: [...s.toolbarButtons, button] })),
@@ -137,6 +151,7 @@ export const usePluginRegistryStore = create<PluginRegistryState>((set) => ({
       sidebarPanels: s.sidebarPanels.filter((panel) => panel.pluginId !== pluginId),
       pluginPages: s.pluginPages.filter((page) => page.pluginId !== pluginId),
       fileViewers: s.fileViewers.filter((viewer) => viewer.pluginId !== pluginId),
+      searchProviders: s.searchProviders.filter((provider) => provider.pluginId !== pluginId),
       slashCommands: s.slashCommands.filter((cmd) => cmd.pluginId !== pluginId),
       contextMenuItems: s.contextMenuItems.filter((item) => item.pluginId !== pluginId),
       toolbarButtons: s.toolbarButtons.filter((button) => button.pluginId !== pluginId),
@@ -151,6 +166,7 @@ export const usePluginRegistryStore = create<PluginRegistryState>((set) => ({
       sidebarPanels: [],
       pluginPages: [],
       fileViewers: [],
+      searchProviders: [],
       slashCommands: [],
       contextMenuItems: [],
       toolbarButtons: [],
@@ -173,6 +189,10 @@ export function registerPluginPage(page: RegisteredPluginPage): void {
 
 export function registerFileViewer(viewer: RegisteredFileViewer): void {
   usePluginRegistryStore.getState().registerFileViewer(viewer);
+}
+
+export function registerSearchProvider(provider: RegisteredSearchProvider): void {
+  usePluginRegistryStore.getState().registerSearchProvider(provider);
 }
 
 export function registerSlashCommand(command: RegisteredSlashCommand): void {

@@ -6,41 +6,41 @@ import (
 	"sort"
 	"strings"
 
-	"volt/core/note"
+	corefile "volt/core/file"
 )
 
-type NoteRepository struct{}
+type FileRepository struct{}
 
-func NewNoteRepository() *NoteRepository {
-	return &NoteRepository{}
+func NewFileRepository() *FileRepository {
+	return &FileRepository{}
 }
 
 // safePath resolves the full path and validates it stays within the volt root.
 func safePath(voltPath, relativePath string) (string, error) {
 	absVolt, err := filepath.Abs(voltPath)
 	if err != nil {
-		return "", note.ErrPathTraversal
+		return "", corefile.ErrPathTraversal
 	}
 
 	full := filepath.Join(absVolt, relativePath)
 	full, err = filepath.Abs(full)
 	if err != nil {
-		return "", note.ErrPathTraversal
+		return "", corefile.ErrPathTraversal
 	}
 
 	rel, err := filepath.Rel(absVolt, full)
 	if err != nil {
-		return "", note.ErrPathTraversal
+		return "", corefile.ErrPathTraversal
 	}
 
 	if strings.HasPrefix(rel, "..") {
-		return "", note.ErrPathTraversal
+		return "", corefile.ErrPathTraversal
 	}
 
 	return full, nil
 }
 
-func (r *NoteRepository) ReadFile(voltPath, filePath string) (string, error) {
+func (r *FileRepository) ReadFile(voltPath, filePath string) (string, error) {
 	full, err := safePath(voltPath, filePath)
 	if err != nil {
 		return "", err
@@ -49,10 +49,10 @@ func (r *NoteRepository) ReadFile(voltPath, filePath string) (string, error) {
 	data, err := os.ReadFile(full)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return "", note.ErrFileNotFound
+			return "", corefile.ErrFileNotFound
 		}
 		if os.IsPermission(err) {
-			return "", note.ErrPermissionDenied
+			return "", corefile.ErrPermissionDenied
 		}
 		return "", err
 	}
@@ -60,7 +60,7 @@ func (r *NoteRepository) ReadFile(voltPath, filePath string) (string, error) {
 	return string(data), nil
 }
 
-func (r *NoteRepository) WriteFile(voltPath, filePath, content string) (err error) {
+func (r *FileRepository) WriteFile(voltPath, filePath, content string) (err error) {
 	full, err := safePath(voltPath, filePath)
 	if err != nil {
 		return err
@@ -69,14 +69,14 @@ func (r *NoteRepository) WriteFile(voltPath, filePath, content string) (err erro
 	dir := filepath.Dir(full)
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		if os.IsPermission(err) {
-			return note.ErrPermissionDenied
+			return corefile.ErrPermissionDenied
 		}
 		return err
 	}
 
 	if err := os.WriteFile(full, []byte(content), 0644); err != nil {
 		if os.IsPermission(err) {
-			return note.ErrPermissionDenied
+			return corefile.ErrPermissionDenied
 		}
 		return err
 	}
@@ -84,7 +84,7 @@ func (r *NoteRepository) WriteFile(voltPath, filePath, content string) (err erro
 	return nil
 }
 
-func (r *NoteRepository) ListDirectory(voltPath, dirPath string) ([]note.FileEntry, error) {
+func (r *FileRepository) ListDirectory(voltPath, dirPath string) ([]corefile.FileEntry, error) {
 	full, err := safePath(voltPath, dirPath)
 	if err != nil {
 		return nil, err
@@ -93,16 +93,16 @@ func (r *NoteRepository) ListDirectory(voltPath, dirPath string) ([]note.FileEnt
 	entries, err := os.ReadDir(full)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return nil, note.ErrFileNotFound
+			return nil, corefile.ErrFileNotFound
 		}
 		if os.IsPermission(err) {
-			return nil, note.ErrPermissionDenied
+			return nil, corefile.ErrPermissionDenied
 		}
 		return nil, err
 	}
 
 	absVolt, _ := filepath.Abs(voltPath)
-	result := make([]note.FileEntry, 0, len(entries))
+	result := make([]corefile.FileEntry, 0, len(entries))
 
 	for _, e := range entries {
 		// Skip hidden files/directories
@@ -113,7 +113,7 @@ func (r *NoteRepository) ListDirectory(voltPath, dirPath string) ([]note.FileEnt
 		entryFull := filepath.Join(full, e.Name())
 		relPath, _ := filepath.Rel(absVolt, entryFull)
 
-		fe := note.FileEntry{
+		fe := corefile.FileEntry{
 			Name:  e.Name(),
 			Path:  relPath,
 			IsDir: e.IsDir(),
@@ -141,20 +141,20 @@ func (r *NoteRepository) ListDirectory(voltPath, dirPath string) ([]note.FileEnt
 	return result, nil
 }
 
-func (r *NoteRepository) CreateFile(voltPath, filePath string) error {
+func (r *FileRepository) CreateFile(voltPath, filePath string) error {
 	full, err := safePath(voltPath, filePath)
 	if err != nil {
 		return err
 	}
 
 	if _, err := os.Stat(full); err == nil {
-		return note.ErrAlreadyExists
+		return corefile.ErrAlreadyExists
 	}
 
 	dir := filepath.Dir(full)
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		if os.IsPermission(err) {
-			return note.ErrPermissionDenied
+			return corefile.ErrPermissionDenied
 		}
 		return err
 	}
@@ -162,26 +162,26 @@ func (r *NoteRepository) CreateFile(voltPath, filePath string) error {
 	f, err := os.Create(full)
 	if err != nil {
 		if os.IsPermission(err) {
-			return note.ErrPermissionDenied
+			return corefile.ErrPermissionDenied
 		}
 		return err
 	}
 	return f.Close()
 }
 
-func (r *NoteRepository) CreateDirectory(voltPath, dirPath string) error {
+func (r *FileRepository) CreateDirectory(voltPath, dirPath string) error {
 	full, err := safePath(voltPath, dirPath)
 	if err != nil {
 		return err
 	}
 
 	if _, err := os.Stat(full); err == nil {
-		return note.ErrAlreadyExists
+		return corefile.ErrAlreadyExists
 	}
 
 	if err := os.MkdirAll(full, 0755); err != nil {
 		if os.IsPermission(err) {
-			return note.ErrPermissionDenied
+			return corefile.ErrPermissionDenied
 		}
 		return err
 	}
@@ -189,19 +189,19 @@ func (r *NoteRepository) CreateDirectory(voltPath, dirPath string) error {
 	return nil
 }
 
-func (r *NoteRepository) DeleteFile(voltPath, filePath string) error {
+func (r *FileRepository) DeletePath(voltPath, filePath string) error {
 	full, err := safePath(voltPath, filePath)
 	if err != nil {
 		return err
 	}
 
 	if _, err := os.Stat(full); os.IsNotExist(err) {
-		return note.ErrFileNotFound
+		return corefile.ErrFileNotFound
 	}
 
 	if err := os.RemoveAll(full); err != nil {
 		if os.IsPermission(err) {
-			return note.ErrPermissionDenied
+			return corefile.ErrPermissionDenied
 		}
 		return err
 	}
@@ -209,7 +209,7 @@ func (r *NoteRepository) DeleteFile(voltPath, filePath string) error {
 	return nil
 }
 
-func (r *NoteRepository) RenameFile(voltPath, oldPath, newPath string) error {
+func (r *FileRepository) RenamePath(voltPath, oldPath, newPath string) error {
 	fullOld, err := safePath(voltPath, oldPath)
 	if err != nil {
 		return err
@@ -221,24 +221,24 @@ func (r *NoteRepository) RenameFile(voltPath, oldPath, newPath string) error {
 	}
 
 	if _, err := os.Stat(fullOld); os.IsNotExist(err) {
-		return note.ErrFileNotFound
+		return corefile.ErrFileNotFound
 	}
 
 	if _, err := os.Stat(fullNew); err == nil {
-		return note.ErrAlreadyExists
+		return corefile.ErrAlreadyExists
 	}
 
 	dir := filepath.Dir(fullNew)
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		if os.IsPermission(err) {
-			return note.ErrPermissionDenied
+			return corefile.ErrPermissionDenied
 		}
 		return err
 	}
 
 	if err := os.Rename(fullOld, fullNew); err != nil {
 		if os.IsPermission(err) {
-			return note.ErrPermissionDenied
+			return corefile.ErrPermissionDenied
 		}
 		return err
 	}

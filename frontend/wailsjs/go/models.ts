@@ -1,4 +1,4 @@
-export namespace note {
+export namespace file {
 	
 	export class FileEntry {
 	    name: string;

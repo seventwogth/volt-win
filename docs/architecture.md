@@ -34,8 +34,8 @@
 ## Ключевые сценарии
 
 - управление volt-хранилищами
-- чтение, сохранение, создание, удаление и переименование markdown-файлов
-- поиск по именам и содержимому заметок
+- чтение, запись, создание, удаление и переименование путей внутри workspace
+- markdown-specific создание note и поиск по core-owned markdown
 - расширение приложения через внешние плагины
 
 ## Plugin архитектура
@@ -55,5 +55,8 @@ Plugin flow в текущей реализации выглядит так:
 - long-running workflows строятся из generic `editor` sessions и `desktop.process`, а не из plugin-specific веток в core
 - schema plugin settings объявляется declarative в `manifest.json`, а host рендерит отдельную settings page `/settings/plugin/:pluginId`
 - settings pages не зависят от загруженного plugin runtime и доступны даже когда plugin disabled
+- backend не знает о plugin-owned file formats
+- plugin-owned search и best-effort rename rewrite реализуются через runtime V3
+- frontend search popup объединяет core markdown results с plugin-owned results через зарегистрированные `search.registerFileTextProvider(...)`
 
 Подробности и guide по созданию собственных плагинов находятся в [docs/plugins.md](plugins.md).

@@ -1,5 +1,5 @@
 import type { Editor } from '@tiptap/react';
-import { readNote, saveNote } from '@shared/api/note';
+import { readFile, writeFile } from '@shared/api/file';
 import { getEditorState, subscribeToEditorState } from './editorBridge';
 
 export interface EditorSessionRange {
@@ -211,7 +211,7 @@ function queueSessionSave(session: InternalEditorSession): Promise<void> {
   session.saveChain = session.saveChain
     .catch(() => undefined)
     .then(async () => {
-      await saveNote(session.voltPath, session.filePath, session.markdown);
+      await writeFile(session.voltPath, session.filePath, session.markdown);
     });
 
   return session.saveChain;
@@ -525,7 +525,7 @@ export async function openEditorSession(
     editorState.filePath === normalizedPath
   )
     ? getEditorMarkdown(editorState.editor)
-    : await readNote(voltPath, normalizedPath);
+    : await readFile(voltPath, normalizedPath);
 
   const sessionId = globalThis.crypto?.randomUUID?.() ?? `session-${Date.now()}-${sessions.size}`;
   const session: InternalEditorSession = {

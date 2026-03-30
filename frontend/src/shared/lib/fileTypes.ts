@@ -1,7 +1,6 @@
 export const MARKDOWN_EXTENSION = '.md';
-export const BOARD_EXTENSION = '.board';
 
-const HIDDEN_DISPLAY_EXTENSIONS = [MARKDOWN_EXTENSION, BOARD_EXTENSION];
+const HIDDEN_DISPLAY_EXTENSIONS = [MARKDOWN_EXTENSION];
 const IMAGE_EXTENSIONS = ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg', '.bmp', '.ico'];
 
 function hasExtension(name: string, extension: string): boolean {
@@ -12,16 +11,8 @@ export function isMarkdownName(name: string): boolean {
   return hasExtension(name, MARKDOWN_EXTENSION);
 }
 
-export function isBoardName(name: string): boolean {
-  return hasExtension(name, BOARD_EXTENSION);
-}
-
 export function isMarkdownPath(path: string): boolean {
   return isMarkdownName(path);
-}
-
-export function isBoardPath(path: string): boolean {
-  return isBoardName(path);
 }
 
 export function isImagePath(path: string): boolean {

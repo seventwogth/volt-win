@@ -1,3 +1,4 @@
+import type { FileEntry } from '@shared/api/file';
 import type { PluginSettingsSection } from '@shared/api/plugin';
 
 export interface EditorSessionRange {
@@ -9,6 +10,30 @@ export interface PluginSettingChangeEvent {
   key: string;
   value: unknown;
   values: Record<string, unknown>;
+}
+
+export interface WorkspacePathRenamedEvent {
+  oldPath: string;
+  newPath: string;
+  isDir: boolean;
+}
+
+export interface SearchFileTextProviderInput {
+  filePath: string;
+  content: string;
+}
+
+export interface SearchFileTextProvider {
+  id: string;
+  extensions: string[];
+  extractText(input: SearchFileTextProviderInput): string | null | undefined | Promise<string | null | undefined>;
+}
+
+export interface PluginEventMap {
+  'workspace:path-renamed': WorkspacePathRenamedEvent;
+  'file-open': string;
+  'file-save': string;
+  'editor-change': undefined;
 }
 
 export interface EditorSession {
@@ -64,8 +89,11 @@ export interface VoltPluginAPI {
     read(path: string): Promise<string>;
     write(path: string, content: string): Promise<void>;
     createFile(path: string, content?: string): Promise<void>;
-    list(dirPath?: string): Promise<unknown[]>;
+    list(dirPath?: string): Promise<FileEntry[]>;
     getActivePath(): string | null;
+  };
+  search: {
+    registerFileTextProvider(config: SearchFileTextProvider): void;
   };
   media: {
     pickImage(): Promise<string>;
@@ -163,7 +191,10 @@ export interface VoltPluginAPI {
     openSession(path: string): Promise<EditorSession>;
   };
   events: {
-    on(event: string, callback: (...args: unknown[]) => void | Promise<void>): () => void;
+    on<TEvent extends keyof PluginEventMap>(
+      event: TEvent,
+      callback: (payload: PluginEventMap[TEvent]) => void | Promise<void>,
+    ): () => void;
   };
   storage: {
     get(key: string): Promise<unknown>;

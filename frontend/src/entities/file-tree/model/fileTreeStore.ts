@@ -1,12 +1,12 @@
 import { create } from 'zustand';
-import type { FileEntry } from '@shared/api/note/types';
+import type { FileEntry } from '@shared/api/file/types';
 import {
   createDirectory,
   createNote,
-  deleteNote,
+  deletePath,
   listTree,
-  renameNote,
-} from '@shared/api/note/noteApi';
+  renamePath,
+} from '@shared/api/file';
 import {
   type FileTreeDropPosition,
   buildRenamedPath,
@@ -392,7 +392,7 @@ export const useFileTreeStore = create<FileTreeState>((set, get) => ({
     }
 
     try {
-      await renameNote(voltPath, editingItem.path, nextPath);
+      await renamePath(voltPath, editingItem.path, nextPath);
 
       syncTabsOnRename(voltId, editingItem.path, nextPath, editingItem.isDir);
 
@@ -416,6 +416,7 @@ export const useFileTreeStore = create<FileTreeState>((set, get) => ({
       emit('workspace:path-renamed', {
         oldPath: editingItem.path,
         newPath: nextPath,
+        isDir: editingItem.isDir,
       });
       await get().refreshTree(voltId, voltPath);
       return nextPath;
@@ -473,7 +474,7 @@ export const useFileTreeStore = create<FileTreeState>((set, get) => ({
     }
 
     try {
-      await deleteNote(voltPath, target.path);
+      await deletePath(voltPath, target.path);
       syncTabsOnDelete(voltId, target.path, target.isDir);
 
       set((state) => ({
@@ -636,7 +637,7 @@ export const useFileTreeStore = create<FileTreeState>((set, get) => ({
     const nextPath = buildMovedPath(draggingPath, dropTargetParentPath);
 
     try {
-      await renameNote(voltPath, draggingPath, nextPath);
+      await renamePath(voltPath, draggingPath, nextPath);
 
       syncTabsOnRename(voltId, draggingPath, nextPath, draggingIsDir);
 
@@ -665,6 +666,7 @@ export const useFileTreeStore = create<FileTreeState>((set, get) => ({
       emit('workspace:path-renamed', {
         oldPath: draggingPath,
         newPath: nextPath,
+        isDir: draggingIsDir,
       });
       await get().refreshTree(voltId, voltPath);
       return nextPath;

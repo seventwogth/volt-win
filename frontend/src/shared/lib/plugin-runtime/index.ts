@@ -50,8 +50,12 @@ export type {
   DesktopProcessHandle,
   EditorSession,
   EditorSessionRange,
+  PluginEventMap,
   PluginFileViewerContext,
   PluginSettingChangeEvent,
   PluginTaskStatusHandle,
+  SearchFileTextProvider,
+  SearchFileTextProviderInput,
   VoltPluginAPI,
+  WorkspacePathRenamedEvent,
 } from './pluginApi';

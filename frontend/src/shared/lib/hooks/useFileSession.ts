@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { useActiveFileStore } from '@entities/editor-session';
 import { useTabStore } from '@entities/tab';
-import { readNote, saveNote } from '@shared/api/note';
+import { readFile, writeFile } from '@shared/api/file';
 import { emit } from '@shared/lib/plugin-runtime';
 
 interface UseFileSessionOptions {
@@ -52,7 +52,7 @@ export function useFileSession({
       if (transformBeforeSave) {
         content = transformBeforeSave(content);
       }
-      await saveNote(voltPath, filePath, content);
+      await writeFile(voltPath, filePath, content);
       setDirty(voltId, filePath, false);
       emit('file-save', filePath);
     } catch (error) {
@@ -84,7 +84,7 @@ export function useFileSession({
           return;
         }
 
-        const raw = await readNote(voltPath, filePath);
+        const raw = await readFile(voltPath, filePath);
         if (cancelled) return;
         const content = transformAfterLoad ? await transformAfterLoad(raw) : raw;
         if (cancelled) return;
@@ -116,7 +116,7 @@ export function useFileSession({
   const markDirtyAndAutoSave = useCallback(() => {
     if (!filePath) return;
     setDirty(voltId, filePath, true);
-    emit('editor-change');
+    emit('editor-change', undefined);
 
     if (autoSaveDelay > 0) {
       if (timerRef.current) {

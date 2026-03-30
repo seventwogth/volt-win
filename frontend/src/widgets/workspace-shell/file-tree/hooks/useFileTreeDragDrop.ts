@@ -5,7 +5,7 @@ import {
   getDropPositionForPointer,
   validateMoveTarget,
 } from '@shared/lib/fileTree';
-import type { FileEntry } from '@shared/api/note/types';
+import type { FileEntry } from '@shared/api/file/types';
 
 export function useFileTreeDragDrop(voltId: string, voltPath: string) {
   const startDrag = useFileTreeStore((state) => state.startDrag);
