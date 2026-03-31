@@ -209,7 +209,7 @@ func (h *PluginRuntimeHandler) CopyPluginAsset(voltPath, sourcePath, targetDir s
 		},
 	)
 	if err != nil {
-		return "", localizedUnexpectedError(h.localization, "backend.action.copyAsset", nil, err)
+		return "", localizedFileError(h.localization, "backend.action.copyAsset", nil, err)
 	}
 
 	return result.RelativePath, nil
