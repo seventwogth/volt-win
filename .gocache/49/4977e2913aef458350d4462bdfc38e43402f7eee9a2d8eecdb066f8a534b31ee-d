@@ -1,0 +1,3 @@
+# test log
+getenv GOTMPDIR
+open C:\Users\stargazer\github\volt-win\.tmp

@@ -1,0 +1,10 @@
+# test log
+getenv GOTMPDIR
+stat C:\Users\stargazer\github\volt-win\.tmp\TestAppSettingsStoreDefaultsToAuto3883576102\001
+open C:\Users\stargazer\github\volt-win\.tmp\TestAppSettingsStoreDefaultsToAuto3883576102\001\settings.json
+open C:\Users\stargazer\github\volt-win\.tmp
+getenv GOTMPDIR
+stat C:\Users\stargazer\github\volt-win\.tmp\TestAppSettingsStoreRoundTrip2901929662\001
+open C:\Users\stargazer\github\volt-win\.tmp\TestAppSettingsStoreRoundTrip2901929662\001\settings.json
+open C:\Users\stargazer\github\volt-win\.tmp\TestAppSettingsStoreRoundTrip2901929662\001\settings.json
+open C:\Users\stargazer\github\volt-win\.tmp

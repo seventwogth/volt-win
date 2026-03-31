@@ -2,12 +2,12 @@ package note
 
 import (
 	"context"
-	"path/filepath"
 	"strings"
 
 	commandbase "volt/commands"
 	domain "volt/core/file"
 	corenote "volt/core/note"
+	"volt/infrastructure/filesystem"
 )
 
 const CreateNoteName = "note.createNote"
@@ -43,6 +43,7 @@ func (c *CreateNoteCommand) Execute(ctx context.Context, req any) (any, error) {
 	if !strings.HasSuffix(filePath, ".md") {
 		filePath += ".md"
 	}
+	filePath = filesystem.NormalizeWorkspacePath(filePath)
 
 	if err := c.repo.CreateFile(request.VoltPath, filePath); err != nil {
 		return nil, err
@@ -51,7 +52,7 @@ func (c *CreateNoteCommand) Execute(ctx context.Context, req any) (any, error) {
 	return CreateNoteResponse{
 		Note: corenote.Note{
 			Path:    filePath,
-			Name:    filepath.Base(filePath),
+			Name:    filesystem.WorkspaceBase(filePath),
 			Content: "",
 		},
 	}, nil

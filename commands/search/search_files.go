@@ -2,12 +2,12 @@ package search
 
 import (
 	"context"
-	"path/filepath"
 	"strings"
 
 	commandbase "volt/commands"
 	corefile "volt/core/file"
 	domain "volt/core/search"
+	"volt/infrastructure/filesystem"
 )
 
 const maxResults = 50
@@ -83,7 +83,7 @@ func searchEntries(
 			continue
 		}
 
-		fileName := filepath.Base(entry.Path)
+		fileName := filesystem.WorkspaceBase(entry.Path)
 		fileNameLower := strings.ToLower(fileName)
 		if !strings.HasSuffix(fileNameLower, ".md") {
 			continue

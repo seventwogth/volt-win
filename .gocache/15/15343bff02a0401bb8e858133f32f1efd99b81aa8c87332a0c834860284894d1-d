@@ -1,0 +1,5 @@
+./file_repository.go
+./plugin_store.go
+./workspace_path.go
+./file_repository_test.go
+./workspace_path_test.go

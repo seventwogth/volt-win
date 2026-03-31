@@ -1,4 +1,5 @@
 import { invokeWailsSafe } from '@shared/api/wailsWithError';
+import { normalizeWorkspacePath } from '@shared/lib/workspacePath';
 
 const loadPluginRuntimeHandler = () => import('../../../../wailsjs/go/wailshandler/PluginRuntimeHandler');
 
@@ -31,11 +32,12 @@ export async function copyPluginAsset(
   sourcePath: string,
   targetDir: string,
 ): Promise<string> {
-  return invokeWailsSafe(
+  const relativePath = await invokeWailsSafe(
     loadPluginRuntimeHandler,
-    (mod) => mod.CopyPluginAsset(voltPath, sourcePath, targetDir),
+    (mod) => mod.CopyPluginAsset(voltPath, sourcePath, normalizeWorkspacePath(targetDir)),
     'copyPluginAsset',
   );
+  return normalizeWorkspacePath(relativePath);
 }
 
 export async function startPluginProcess(
