@@ -13,6 +13,9 @@ env:
   GO_VERSION: "1.23.3"
   NODE_VERSION: "20"
   NODE_OPTIONS: "--max-old-space-size=4096"
+  WINDOWS_SIGNING_CERT_BASE64: ${{ secrets.WINDOWS_SIGNING_CERT_BASE64 }}
+  WINDOWS_SIGNING_CERT_PASSWORD: ${{ secrets.WINDOWS_SIGNING_CERT_PASSWORD }}
+  WINDOWS_SIGNING_TIMESTAMP_URL: ${{ vars.WINDOWS_SIGNING_TIMESTAMP_URL }}
 
 jobs:
   build:
@@ -30,8 +33,9 @@ jobs:
           - label: Windows
             os: windows-latest
             platform: windows/amd64
-            build_args: ""
+            build_args: --nsis
             asset_name: volt-windows-amd64.zip
+            installer_name: volt-windows-amd64-installer.exe
           - label: macOS
             os: macos-15
             platform: darwin/universal
@@ -60,6 +64,17 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y build-essential libgtk-3-dev libwebkit2gtk-4.1-dev
 
+      - name: Install NSIS
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          if (Get-Command makensis.exe -ErrorAction SilentlyContinue) {
+            Write-Host "NSIS is already available on the runner"
+            return
+          }
+
+          choco install nsis -y --no-progress
+
       - name: Install Wails CLI
         shell: bash
         run: go install github.com/wailsapp/wails/v2/cmd/wails@v2.12.0
@@ -74,17 +89,90 @@ jobs:
             wails build -platform "${{ matrix.platform }}"
           fi
 
+      - name: Prepare Windows signing
+        if: runner.os == 'Windows'
+        shell: pwsh
+        env:
+          WINDOWS_SIGNING_CERT_BASE64: ${{ secrets.WINDOWS_SIGNING_CERT_BASE64 }}
+          WINDOWS_SIGNING_CERT_PASSWORD: ${{ secrets.WINDOWS_SIGNING_CERT_PASSWORD }}
+        run: |
+          if ([string]::IsNullOrWhiteSpace($env:WINDOWS_SIGNING_CERT_BASE64) -or [string]::IsNullOrWhiteSpace($env:WINDOWS_SIGNING_CERT_PASSWORD)) {
+            Add-Content -Path $env:GITHUB_ENV -Value "WINDOWS_SIGNING_ENABLED=false"
+            Write-Host "Windows signing secrets are not configured; skipping signing."
+            return
+          }
+
+          $certPath = Join-Path $env:RUNNER_TEMP 'windows-signing-cert.pfx'
+          [IO.File]::WriteAllBytes($certPath, [Convert]::FromBase64String($env:WINDOWS_SIGNING_CERT_BASE64))
+          Add-Content -Path $env:GITHUB_ENV -Value "WINDOWS_SIGNING_ENABLED=true"
+          Add-Content -Path $env:GITHUB_ENV -Value "WINDOWS_SIGNING_CERT_PATH=$certPath"
+
+      - name: Sign Windows binaries
+        if: runner.os == 'Windows'
+        shell: pwsh
+        env:
+          WINDOWS_SIGNING_CERT_PASSWORD: ${{ secrets.WINDOWS_SIGNING_CERT_PASSWORD }}
+        run: |
+          if ($env:WINDOWS_SIGNING_ENABLED -ne 'true') {
+            Write-Host "Skipping Windows code signing"
+            return
+          }
+
+          $signtool = Get-Command signtool.exe -ErrorAction SilentlyContinue
+          $signtoolPath = $null
+          if ($signtool) {
+            $signtoolPath = $signtool.Source
+          }
+
+          if (-not $signtoolPath) {
+            $sdkRoot = Join-Path ${env:ProgramFiles(x86)} 'Windows Kits\10\bin'
+            $signtoolPath = Get-ChildItem -Path $sdkRoot -Recurse -Filter signtool.exe -ErrorAction SilentlyContinue |
+              Sort-Object FullName |
+              Select-Object -Last 1 |
+              ForEach-Object { $_.FullName }
+          }
+
+          if (-not $signtoolPath) {
+            throw "signtool.exe was not found on the runner"
+          }
+
+          $timestampUrl = $env:WINDOWS_SIGNING_TIMESTAMP_URL
+          if ([string]::IsNullOrWhiteSpace($timestampUrl)) {
+            $timestampUrl = 'http://timestamp.digicert.com'
+          }
+          $installerName = "${{ matrix.installer_name }}"
+          Get-ChildItem -Path build/bin -Filter *.exe -File | Where-Object { $_.Name -ne $installerName } | ForEach-Object {
+            & $signtoolPath sign /fd SHA256 /f $env:WINDOWS_SIGNING_CERT_PATH /p $env:WINDOWS_SIGNING_CERT_PASSWORD /tr $timestampUrl /td SHA256 $_.FullName
+          }
+
       - name: Archive Linux build
         if: runner.os == 'Linux'
         shell: bash
         run: |
           tar -czf "${{ matrix.asset_name }}" -C build/bin .
 
-      - name: Archive Windows build
+      - name: Archive Windows portable build
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          Compress-Archive -Path build/bin/* -DestinationPath "${{ matrix.asset_name }}"
+          $installerName = "${{ matrix.installer_name }}"
+          $portableItems = Get-ChildItem -Path build/bin -Force | Where-Object { $_.Name -ne $installerName }
+          if (-not $portableItems) {
+            throw "No Windows portable build outputs found"
+          }
+
+          Compress-Archive -Path $portableItems.FullName -DestinationPath "${{ matrix.asset_name }}"
+
+      - name: Archive Windows installer
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $installerSource = Join-Path 'build/bin' "${{ matrix.installer_name }}"
+          if (-not (Test-Path $installerSource)) {
+            throw "Windows installer was not produced: $installerSource"
+          }
+
+          Copy-Item -LiteralPath $installerSource -Destination "${{ matrix.installer_name }}"
 
       - name: Archive macOS build
         if: runner.os == 'macOS'
@@ -93,10 +181,27 @@ jobs:
           ditto -c -k --sequesterRsrc --keepParent "build/bin/${APP_NAME}.app" "${{ matrix.asset_name }}"
 
       - name: Upload build artifact
+        if: runner.os != 'Windows'
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.label }}-release
           path: ${{ matrix.asset_name }}
+          if-no-files-found: error
+
+      - name: Upload Windows portable artifact
+        if: runner.os == 'Windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: Windows-portable-release
+          path: ${{ matrix.asset_name }}
+          if-no-files-found: error
+
+      - name: Upload Windows installer artifact
+        if: runner.os == 'Windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: Windows-installer-release
+          path: ${{ matrix.installer_name }}
           if-no-files-found: error
 
   release:
