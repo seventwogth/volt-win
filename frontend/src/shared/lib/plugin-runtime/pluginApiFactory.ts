@@ -133,7 +133,7 @@ export function createPluginAPI(
 
   const wrapSession = (session: PluginEditorSession): EditorSession => ({
     id: session.id,
-    filePath: session.filePath,
+    filePath: normalizeWorkspacePath(session.filePath),
     getMarkdown: () => session.getMarkdown(),
     save: () => session.save(),
     dispose: () => session.dispose(),
@@ -306,7 +306,7 @@ export function createPluginAPI(
         if (!activeTabId) return null;
         const tabs = tabState.tabs[voltId] ?? [];
         const tab = tabs.find((t) => t.id === activeTabId);
-        return tab && tab.type === 'file' ? tab.filePath : null;
+        return tab && tab.type === 'file' ? normalizeWorkspacePath(tab.filePath) : null;
       },
       getRootPath(): string {
         requirePermission('read', 'workspace.getRootPath');

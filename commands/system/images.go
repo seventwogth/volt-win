@@ -189,7 +189,12 @@ func (c *ReadImageBase64Command) Execute(ctx context.Context, req any) (any, err
 		return nil, err
 	}
 
-	if !strings.HasPrefix(absFile, absVolt) {
+	insideVolt, err := filesystem.IsWithinBaseDir(absVolt, absFile)
+	if err != nil {
+		return nil, err
+	}
+
+	if !insideVolt {
 		return nil, fmt.Errorf("path traversal detected")
 	}
 

@@ -82,9 +82,9 @@ func (s *PluginProcessService) Start(req StartPluginProcessRequest) error {
 		return ErrCommandRequired
 	}
 
-	processPath, err := exec.LookPath(commandName)
+	launchSpec, err := resolveProcessLaunchSpec(commandName, req.Args, voltPath)
 	if err != nil {
-		return &ErrCommandNotFound{Command: commandName}
+		return err
 	}
 
 	s.processMu.Lock()
@@ -100,10 +100,9 @@ func (s *PluginProcessService) Start(req StartPluginProcessRequest) error {
 	go s.run(
 		runCtx,
 		cancel,
-		processPath,
+		launchSpec,
 		runID,
 		voltPath,
-		req.Args,
 		req.Stdin,
 		normalizeProcessMode(req.StdoutMode),
 		normalizeProcessMode(req.StderrMode),
@@ -130,10 +129,9 @@ func (s *PluginProcessService) Cancel(runID string) {
 func (s *PluginProcessService) run(
 	runCtx context.Context,
 	cancel context.CancelFunc,
-	processPath string,
+	launchSpec processLaunchSpec,
 	runID string,
 	voltPath string,
-	args []string,
 	stdin string,
 	stdoutMode string,
 	stderrMode string,
@@ -143,7 +141,8 @@ func (s *PluginProcessService) run(
 ) {
 	defer s.consumeProcessCancel(runID)
 
-	cmd := exec.CommandContext(runCtx, processPath, args...)
+	cmd := exec.CommandContext(runCtx, launchSpec.processPath, launchSpec.args...)
+	configureProcessCommand(cmd, launchSpec)
 	cmd.Dir = voltPath
 	if stdin != "" {
 		cmd.Stdin = strings.NewReader(stdin)
