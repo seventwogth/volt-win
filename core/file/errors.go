@@ -7,4 +7,5 @@ var (
 	ErrPermissionDenied = errors.New("permission denied")
 	ErrPathTraversal    = errors.New("path traversal is not allowed")
 	ErrAlreadyExists    = errors.New("file or directory already exists")
+	ErrInvalidName      = errors.New("file or directory name is not valid")
 )

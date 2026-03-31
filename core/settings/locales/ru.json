@@ -6,6 +6,7 @@
     "backend.error.file.permissionDenied": "Недостаточно прав",
     "backend.error.file.pathTraversal": "Выход за пределы хранилища запрещен",
     "backend.error.file.alreadyExists": "Файл или папка уже существует",
+    "backend.error.file.invalidName": "Имя некорректно для Windows",
     "backend.error.note.notFound": "Файл не найден",
     "backend.error.note.permissionDenied": "Недостаточно прав",
     "backend.error.note.pathTraversal": "Выход за пределы хранилища запрещен",

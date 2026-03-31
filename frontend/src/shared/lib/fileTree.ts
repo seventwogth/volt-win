@@ -11,6 +11,31 @@ import {
 export type FileTreeDropPosition = 'inside' | 'before' | 'after';
 export { isMarkdownName };
 
+const WINDOWS_RESERVED_NAMES = new Set([
+  'CON',
+  'PRN',
+  'AUX',
+  'NUL',
+  'COM1',
+  'COM2',
+  'COM3',
+  'COM4',
+  'COM5',
+  'COM6',
+  'COM7',
+  'COM8',
+  'COM9',
+  'LPT1',
+  'LPT2',
+  'LPT3',
+  'LPT4',
+  'LPT5',
+  'LPT6',
+  'LPT7',
+  'LPT8',
+  'LPT9',
+]);
+
 export function stripMarkdownExtension(name: string): string {
   return isMarkdownName(name) ? name.slice(0, -MARKDOWN_EXTENSION.length) : name;
 }
@@ -78,6 +103,19 @@ export function validateInlineName(name: string): string | null {
 
   if (trimmed.includes('/') || trimmed.includes('\\')) {
     return translate('fileTree.validation.singleName');
+  }
+
+  if (/[<>:"|?*]/.test(trimmed)) {
+    return translate('fileTree.validation.invalidName');
+  }
+
+  if (trimmed.endsWith('.') || trimmed.endsWith(' ')) {
+    return translate('fileTree.validation.invalidName');
+  }
+
+  const reservedBaseName = trimmed.replace(/[ .]+$/g, '').split('.')[0]?.toUpperCase() ?? '';
+  if (WINDOWS_RESERVED_NAMES.has(reservedBaseName)) {
+    return translate('fileTree.validation.invalidName');
   }
 
   return null;
