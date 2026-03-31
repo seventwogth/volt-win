@@ -57,6 +57,7 @@ import {
   setPluginSettingValue,
   subscribePluginSettings,
 } from '@entities/plugin';
+import { normalizeWorkspacePath } from '@shared/lib/workspacePath';
 import { BrowserOpenURL } from '../../../../wailsjs/runtime/runtime';
 
 function normalizePluginIcon(icon?: PluginIcon): IconSource {
@@ -273,16 +274,16 @@ export function createPluginAPI(
     fs: {
       async read(path: string): Promise<string> {
         requirePermission('read', 'fs.read');
-        return readFile(voltPath, path);
+        return readFile(voltPath, normalizeWorkspacePath(path));
       },
       async write(path: string, content: string): Promise<void> {
         requirePermission('write', 'fs.write');
-        return writeFile(voltPath, path, content);
+        return writeFile(voltPath, normalizeWorkspacePath(path), content);
       },
       async create(path: string, content = ''): Promise<void> {
         requirePermission('write', 'fs.create');
 
-        const normalizedPath = path.trim();
+        const normalizedPath = normalizeWorkspacePath(path);
         if (!normalizedPath) {
           throw reportPluginError(pluginId, 'fs.create', new Error('File path is required'));
         }
@@ -361,7 +362,7 @@ export function createPluginAPI(
       },
       async readImageDataUrl(path: string) {
         requirePermission('read', 'assets.readImageDataUrl');
-        return readImageBase64(voltPath, path);
+        return readImageBase64(voltPath, normalizeWorkspacePath(path));
       },
     },
     process: {
@@ -532,7 +533,7 @@ export function createPluginAPI(
           throw reportPluginError(pluginId, `openFile:${path}`, new Error('No active workspace'));
         }
 
-        const normalizedPath = path.trim();
+        const normalizedPath = normalizeWorkspacePath(path);
         if (!normalizedPath) {
           throw reportPluginError(pluginId, 'openFile', new Error('File path is required'));
         }
@@ -560,7 +561,7 @@ export function createPluginAPI(
       },
       async openSession(path: string) {
         requirePermission('editor', 'editor.openSession');
-        const session = await openEditorSession(pluginId, voltPath, path);
+        const session = await openEditorSession(pluginId, voltPath, normalizeWorkspacePath(path));
         return wrapSession(session);
       },
       listKinds() {

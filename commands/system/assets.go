@@ -10,6 +10,7 @@ import (
 	"time"
 
 	commandbase "volt/commands"
+	"volt/infrastructure/filesystem"
 )
 
 const CopyAssetName = "system.asset.copy"
@@ -45,7 +46,7 @@ func (c *CopyAssetCommand) Execute(ctx context.Context, req any) (any, error) {
 		return nil, err
 	}
 
-	destDir := filepath.Join(request.VoltPath, targetDir)
+	destDir := filepath.Join(request.VoltPath, filepath.FromSlash(targetDir))
 	if err := os.MkdirAll(destDir, 0755); err != nil {
 		return nil, err
 	}
@@ -79,27 +80,9 @@ func (c *CopyAssetCommand) Execute(ctx context.Context, req any) (any, error) {
 		return nil, err
 	}
 
-	return CopyAssetResponse{RelativePath: filepath.Join(targetDir, destName)}, nil
+	return CopyAssetResponse{RelativePath: filesystem.JoinWorkspacePath(targetDir, destName)}, nil
 }
 
 func normalizeAssetTargetDir(targetDir string) (string, error) {
-	trimmed := strings.TrimSpace(targetDir)
-	if trimmed == "" {
-		return "attachments", nil
-	}
-
-	clean := filepath.Clean(trimmed)
-	if strings.HasPrefix(clean, "..") || filepath.IsAbs(clean) {
-		return "", fmt.Errorf("invalid target dir")
-	}
-
-	for strings.HasPrefix(clean, string(filepath.Separator)) {
-		clean = strings.TrimPrefix(clean, string(filepath.Separator))
-	}
-
-	if clean == "." || clean == "" {
-		return "attachments", nil
-	}
-
-	return clean, nil
+	return normalizeWorkspaceSubdir(targetDir, "attachments")
 }

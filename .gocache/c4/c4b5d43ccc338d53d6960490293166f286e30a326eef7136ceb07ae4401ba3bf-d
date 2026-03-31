@@ -1,0 +1,12 @@
+./file_handler.go
+./image_handler.go
+./lifecycle.go
+./localization_helpers.go
+./note_handler.go
+./plugin_handler.go
+./plugin_process.go
+./search_handler.go
+./settings_handler.go
+./vault_asset_server.go
+./volt_handler.go
+./handlers_smoke_test.go

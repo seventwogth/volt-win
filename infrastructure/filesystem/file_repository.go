@@ -22,7 +22,7 @@ func safePath(voltPath, relativePath string) (string, error) {
 		return "", corefile.ErrPathTraversal
 	}
 
-	full := filepath.Join(absVolt, relativePath)
+	full := filepath.Join(absVolt, filepath.FromSlash(NormalizeWorkspacePath(relativePath)))
 	full, err = filepath.Abs(full)
 	if err != nil {
 		return "", corefile.ErrPathTraversal
@@ -112,15 +112,16 @@ func (r *FileRepository) ListDirectory(voltPath, dirPath string) ([]corefile.Fil
 
 		entryFull := filepath.Join(full, e.Name())
 		relPath, _ := filepath.Rel(absVolt, entryFull)
+		normalizedRelPath := NormalizeWorkspacePath(relPath)
 
 		fe := corefile.FileEntry{
 			Name:  e.Name(),
-			Path:  relPath,
+			Path:  normalizedRelPath,
 			IsDir: e.IsDir(),
 		}
 
 		if e.IsDir() {
-			children, err := r.ListDirectory(voltPath, relPath)
+			children, err := r.ListDirectory(voltPath, normalizedRelPath)
 			if err != nil {
 				return nil, err
 			}

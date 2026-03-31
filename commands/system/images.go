@@ -12,6 +12,7 @@ import (
 	"time"
 
 	commandbase "volt/commands"
+	"volt/infrastructure/filesystem"
 )
 
 const (
@@ -66,8 +67,12 @@ func (c *CopyImageCommand) Execute(ctx context.Context, req any) (any, error) {
 		return nil, err
 	}
 
-	imageDir := normalizeImageDir(request.ImageDir)
-	destDir := filepath.Join(request.VoltPath, imageDir)
+	imageDir, err := normalizeImageDir(request.ImageDir)
+	if err != nil {
+		return nil, err
+	}
+
+	destDir := filepath.Join(request.VoltPath, filepath.FromSlash(imageDir))
 	if err := os.MkdirAll(destDir, 0755); err != nil {
 		return nil, err
 	}
@@ -98,7 +103,7 @@ func (c *CopyImageCommand) Execute(ctx context.Context, req any) (any, error) {
 		return nil, err
 	}
 
-	return CopyImageResponse{RelativePath: filepath.Join(imageDir, destName)}, nil
+	return CopyImageResponse{RelativePath: filesystem.JoinWorkspacePath(imageDir, destName)}, nil
 }
 
 type SaveImageBase64Command struct{}
@@ -117,8 +122,12 @@ func (c *SaveImageBase64Command) Execute(ctx context.Context, req any) (any, err
 		return nil, err
 	}
 
-	imageDir := normalizeImageDir(request.ImageDir)
-	destDir := filepath.Join(request.VoltPath, imageDir)
+	imageDir, err := normalizeImageDir(request.ImageDir)
+	if err != nil {
+		return nil, err
+	}
+
+	destDir := filepath.Join(request.VoltPath, filepath.FromSlash(imageDir))
 	if err := os.MkdirAll(destDir, 0755); err != nil {
 		return nil, err
 	}
@@ -145,7 +154,7 @@ func (c *SaveImageBase64Command) Execute(ctx context.Context, req any) (any, err
 		return nil, err
 	}
 
-	return SaveImageBase64Response{RelativePath: filepath.Join(imageDir, destName)}, nil
+	return SaveImageBase64Response{RelativePath: filesystem.JoinWorkspacePath(imageDir, destName)}, nil
 }
 
 type ReadImageBase64Command struct{}
@@ -164,12 +173,12 @@ func (c *ReadImageBase64Command) Execute(ctx context.Context, req any) (any, err
 		return nil, err
 	}
 
-	cleanPath := filepath.Clean(request.RelPath)
-	if strings.Contains(cleanPath, "..") {
+	cleanPath := filesystem.NormalizeWorkspacePath(request.RelPath)
+	if cleanPath == ".." || strings.HasPrefix(cleanPath, "../") || isAbsoluteWorkspacePath(request.RelPath) {
 		return nil, fmt.Errorf("invalid path")
 	}
 
-	fullPath := filepath.Join(request.VoltPath, cleanPath)
+	fullPath := filepath.Join(request.VoltPath, filepath.FromSlash(cleanPath))
 	absVolt, err := filepath.Abs(request.VoltPath)
 	if err != nil {
 		return nil, err
@@ -199,10 +208,6 @@ func (c *ReadImageBase64Command) Execute(ctx context.Context, req any) (any, err
 	}, nil
 }
 
-func normalizeImageDir(imageDir string) string {
-	if strings.TrimSpace(imageDir) == "" {
-		return "attachments"
-	}
-
-	return imageDir
+func normalizeImageDir(imageDir string) (string, error) {
+	return normalizeWorkspaceSubdir(imageDir, "attachments")
 }

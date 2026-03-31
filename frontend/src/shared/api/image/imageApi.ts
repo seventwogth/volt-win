@@ -1,17 +1,24 @@
 import { invokeWailsSafe } from '@shared/api/wailsWithError';
+import { normalizeWorkspacePath } from '@shared/lib/workspacePath';
 
 const loadImageHandler = () => import('../../../../wailsjs/go/wailshandler/ImageHandler');
 
 export async function copyImage(voltPath: string, sourcePath: string, imageDir: string): Promise<string> {
-  return invokeWailsSafe(loadImageHandler, (mod) => mod.CopyImage(voltPath, sourcePath, imageDir), 'copyImage');
+  const relativePath = await invokeWailsSafe(
+    loadImageHandler,
+    (mod) => mod.CopyImage(voltPath, sourcePath, normalizeWorkspacePath(imageDir)),
+    'copyImage',
+  );
+  return normalizeWorkspacePath(relativePath);
 }
 
 export async function saveImageBase64(voltPath: string, fileName: string, imageDir: string, base64Data: string): Promise<string> {
-  return invokeWailsSafe(
+  const relativePath = await invokeWailsSafe(
     loadImageHandler,
-    (mod) => mod.SaveImageBase64(voltPath, fileName, imageDir, base64Data),
+    (mod) => mod.SaveImageBase64(voltPath, fileName, normalizeWorkspacePath(imageDir), base64Data),
     'saveImageBase64',
   );
+  return normalizeWorkspacePath(relativePath);
 }
 
 export async function pickImage(): Promise<string> {
@@ -19,7 +26,7 @@ export async function pickImage(): Promise<string> {
 }
 
 export async function readImageBase64(voltPath: string, relPath: string): Promise<string> {
-  return invokeWailsSafe(loadImageHandler, (mod) => mod.ReadImageBase64(voltPath, relPath), 'readImageBase64');
+  return invokeWailsSafe(loadImageHandler, (mod) => mod.ReadImageBase64(voltPath, normalizeWorkspacePath(relPath)), 'readImageBase64');
 }
 
 export function dataUrlToBlobUrl(dataUrl: string): string {
