@@ -1,7 +1,0 @@
-./delete_plugin.go
-./get_plugins_directory.go
-./import_plugin.go
-./list_plugins.go
-./load_plugin.go
-./plugin_data.go
-./toggle_plugin.go
