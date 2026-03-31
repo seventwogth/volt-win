@@ -6,6 +6,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"volt/infrastructure/filesystem"
 )
 
 // VaultAssetServer serves files from vault directories over HTTP.
@@ -42,7 +44,8 @@ func (s *VaultAssetServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Ensure file is inside vault
 	absVault, _ := filepath.Abs(vault)
 	absFile, _ := filepath.Abs(fullPath)
-	if !strings.HasPrefix(absFile, absVault) {
+	insideVault, err := filesystem.IsWithinBaseDir(absVault, absFile)
+	if err != nil || !insideVault {
 		http.Error(w, "forbidden", http.StatusForbidden)
 		return
 	}
