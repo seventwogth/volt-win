@@ -6,6 +6,7 @@
     "backend.error.file.permissionDenied": "Permission denied",
     "backend.error.file.pathTraversal": "Path traversal is not allowed",
     "backend.error.file.alreadyExists": "File or directory already exists",
+    "backend.error.file.invalidName": "Name is not valid on Windows",
     "backend.error.note.notFound": "File not found",
     "backend.error.note.permissionDenied": "Permission denied",
     "backend.error.note.pathTraversal": "Path traversal is not allowed",

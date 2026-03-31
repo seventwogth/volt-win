@@ -47,6 +47,8 @@ func localizedFileError(localization *coresettings.LocalizationService, actionKe
 		return errors.New(translate(localization, "backend.error.file.pathTraversal", nil))
 	case errors.Is(err, corefile.ErrAlreadyExists):
 		return errors.New(translate(localization, "backend.error.file.alreadyExists", nil))
+	case errors.Is(err, corefile.ErrInvalidName):
+		return errors.New(translate(localization, "backend.error.file.invalidName", nil))
 	default:
 		return localizedUnexpectedError(localization, actionKey, params, err)
 	}

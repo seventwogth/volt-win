@@ -17,6 +17,10 @@ func NewFileRepository() *FileRepository {
 
 // safePath resolves the full path and validates it stays within the volt root.
 func safePath(voltPath, relativePath string) (string, error) {
+	if err := validateWorkspacePath(relativePath, true); err != nil {
+		return "", err
+	}
+
 	absVolt, err := filepath.Abs(voltPath)
 	if err != nil {
 		return "", corefile.ErrPathTraversal
@@ -61,6 +65,10 @@ func (r *FileRepository) ReadFile(voltPath, filePath string) (string, error) {
 }
 
 func (r *FileRepository) WriteFile(voltPath, filePath, content string) (err error) {
+	if err := validateWorkspacePathForMutation(filePath); err != nil {
+		return err
+	}
+
 	full, err := safePath(voltPath, filePath)
 	if err != nil {
 		return err
@@ -143,6 +151,10 @@ func (r *FileRepository) ListDirectory(voltPath, dirPath string) ([]corefile.Fil
 }
 
 func (r *FileRepository) CreateFile(voltPath, filePath string) error {
+	if err := validateWorkspacePathForMutation(filePath); err != nil {
+		return err
+	}
+
 	full, err := safePath(voltPath, filePath)
 	if err != nil {
 		return err
@@ -171,6 +183,10 @@ func (r *FileRepository) CreateFile(voltPath, filePath string) error {
 }
 
 func (r *FileRepository) CreateDirectory(voltPath, dirPath string) error {
+	if err := validateWorkspacePathForMutation(dirPath); err != nil {
+		return err
+	}
+
 	full, err := safePath(voltPath, dirPath)
 	if err != nil {
 		return err
@@ -191,6 +207,10 @@ func (r *FileRepository) CreateDirectory(voltPath, dirPath string) error {
 }
 
 func (r *FileRepository) DeletePath(voltPath, filePath string) error {
+	if err := validateWorkspacePathForMutation(filePath); err != nil {
+		return err
+	}
+
 	full, err := safePath(voltPath, filePath)
 	if err != nil {
 		return err
@@ -211,6 +231,14 @@ func (r *FileRepository) DeletePath(voltPath, filePath string) error {
 }
 
 func (r *FileRepository) RenamePath(voltPath, oldPath, newPath string) error {
+	if err := validateWorkspacePathForMutation(oldPath); err != nil {
+		return err
+	}
+
+	if err := validateWorkspacePathForMutation(newPath); err != nil {
+		return err
+	}
+
 	fullOld, err := safePath(voltPath, oldPath)
 	if err != nil {
 		return err
