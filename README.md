@@ -1,109 +1,109 @@
 # VOLT Windows Fork
 
-This repository is a Windows-focused fork of VOLT.
+Этот репозиторий — Windows-ориентированный форк VOLT.
 
-The fork keeps the original app architecture based on `Wails`, `Go`, `React`, and `TypeScript`, but its primary target is Windows development, packaging, and runtime behavior. In particular, this fork carries Windows-specific work around file-system behavior, process launching, packaging, and release artifacts.
+Форк сохраняет исходную архитектуру приложения на `Wails`, `Go`, `React` и `TypeScript`, но в первую очередь нацелен на разработку, упаковку и runtime-поведение в Windows. В частности, здесь поддерживаются Windows-специфичные изменения вокруг файловой системы, запуска процессов, упаковки приложения и release-артефактов.
 
-## What This Fork Is
+## Что Это За Форк
 
-- A desktop knowledge-management app for local Markdown workspaces
-- A Windows-first fork with explicit support for Windows path rules, file naming constraints, and packaging
-- A Wails desktop app with Go backend and React frontend
+- Десктопное приложение для работы с локальными Markdown-workspace
+- Windows-first форк с явной поддержкой правил Windows для путей, имён файлов и упаковки
+- Wails-приложение с backend на Go и frontend на React
 
-## Windows Focus
+## Фокус На Windows
 
-Compared to the upstream baseline, this fork is maintained with Windows as the primary environment.
+По сравнению с исходной базой этот форк сопровождается с Windows как с основной средой.
 
-- File and directory operations are validated against Windows naming rules
-- Plugin process launching supports Windows command resolution and batch execution
-- Release artifacts include Windows ZIP and NSIS installer outputs
-- Repository docs and build flow are oriented around Windows development first
+- Операции с файлами и каталогами валидируются по правилам именования Windows
+- Запуск plugin process учитывает Windows command resolution и batch execution
+- Release-артефакты включают Windows ZIP и NSIS installer
+- Документация и build flow в репозитории ориентированы прежде всего на Windows-разработку
 
-## Core Features
+## Основные Возможности
 
-- Open and manage local Volt workspaces
-- Create, rename, move, and delete files and folders inside a workspace
-- Edit Markdown notes
-- Search by filename and note content
-- Extend the app through plugins, commands, slash menus, pages, viewers, toolbar actions, sidebar items, and context-menu entries
+- Открытие и управление локальными Volt-workspace
+- Создание, переименование, перемещение и удаление файлов и папок внутри workspace
+- Редактирование Markdown-заметок
+- Поиск по именам файлов и содержимому заметок
+- Расширение приложения через плагины, команды, slash-меню, страницы, viewers, toolbar actions, sidebar items и context menu
 
-## Stack
+## Стек
 
 - Backend: `Go` + `Wails`
 - Frontend: `React 18`, `TypeScript`, `Vite`, `Zustand`, `Tiptap`
 - Desktop runtime: `Wails v2`
 
-## Requirements
+## Требования
 
 - Go `1.26+`
 - Node.js `20+`
 - Wails CLI `v2.12.0`
-- Windows development environment is the primary supported target for this fork
+- Основная целевая среда для этого форка — Windows
 
-## Quick Start
+## Быстрый Старт
 
-Install Wails CLI:
+Установите Wails CLI:
 
 ```bash
 go install github.com/wailsapp/wails/v2/cmd/wails@v2.12.0
 ```
 
-Install frontend dependencies:
+Установите frontend-зависимости:
 
 ```bash
 cd frontend
 npm ci
 ```
 
-Run in development mode from the repository root:
+Запуск в режиме разработки из корня репозитория:
 
 ```bash
 wails dev
 ```
 
-Build production assets:
+Сборка production-ассетов frontend:
 
 ```bash
 cd frontend
 npm run build
 ```
 
-Build the desktop app:
+Сборка desktop-приложения:
 
 ```bash
 wails build
 ```
 
-Generated frontend assets live in `frontend/dist/`.
-Generated application binaries live in `build/bin/`.
-These are build artifacts and must not be committed.
+Сгенерированные frontend-ассеты лежат в `frontend/dist/`.
+Сгенерированные бинарники приложения лежат в `build/bin/`.
+Это build-артефакты, их нельзя коммитить в репозиторий.
 
-## Repository Layout
+## Структура Репозитория
 
-- `bootstrap/` - dependency wiring and Wails bindings
-- `commands/` - application use cases
-- `core/` - domain types, contracts, and errors
-- `infrastructure/` - file system, local persistence, and runtime bridge
-- `interfaces/wailshandler/` - backend API exposed to the frontend through Wails
-- `frontend/` - React app, editor UI, and plugin runtime
-- `docs/` - project documentation
-- `build/windows/` - Windows packaging assets, including installer configuration
+- `bootstrap/` - wiring зависимостей и Wails bindings
+- `commands/` - сценарии приложения
+- `core/` - доменные типы, контракты и ошибки
+- `infrastructure/` - файловая система, локальное хранилище и runtime bridge
+- `interfaces/wailshandler/` - backend API, доступный frontend через Wails
+- `frontend/` - React-приложение, UI-редактор и plugin runtime
+- `docs/` - документация по проекту
+- `build/windows/` - Windows-артефакты упаковки, включая конфигурацию инсталлятора
 
 ## Release Notes
 
-The release pipeline is documented in [docs/release.md](docs/release.md).
+Release pipeline описан в [docs/release.md](docs/release.md).
 
-For this fork, Windows release outputs are especially important:
+Для этого форка особенно важны Windows-артефакты:
 
 - `volt-windows-amd64.zip`
 - `volt-windows-amd64-installer.exe`
 
-## Documentation
+## Документация
 
-Start here: [docs/README.md](docs/README.md)
+Точка входа: [docs/README.md](docs/README.md)
 
-- [Architecture](docs/architecture.md)
+- [Архитектура](docs/architecture.md)
 - [Backend](docs/backend.md)
 - [Frontend](docs/frontend.md)
-- [Plugin System](docs/plugins.md)
-- [Release Pipeline](docs/release.md)
+- [Плагинная система](docs/plugins.md)
+- [Release pipeline](docs/release.md)
