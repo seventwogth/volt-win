@@ -79,11 +79,17 @@ func (c *CopyImageCommand) Execute(ctx context.Context, req any) (any, error) {
 
 	ext := filepath.Ext(request.SourcePath)
 	baseName := strings.TrimSuffix(filepath.Base(request.SourcePath), ext)
+	if err := filesystem.ValidateWorkspaceName(baseName + ext); err != nil {
+		return nil, err
+	}
 	destName := baseName + ext
 	destPath := filepath.Join(destDir, destName)
 
 	if _, err := os.Stat(destPath); err == nil {
 		destName = fmt.Sprintf("%s_%d%s", baseName, time.Now().UnixMilli(), ext)
+		if err := filesystem.ValidateWorkspaceName(destName); err != nil {
+			return nil, err
+		}
 		destPath = filepath.Join(destDir, destName)
 	}
 
@@ -142,11 +148,17 @@ func (c *SaveImageBase64Command) Execute(ctx context.Context, req any) (any, err
 	if ext == "" {
 		ext = ".png"
 	}
+	if err := filesystem.ValidateWorkspaceName(baseName + ext); err != nil {
+		return nil, err
+	}
 
 	destName := baseName + ext
 	destPath := filepath.Join(destDir, destName)
 	if _, err := os.Stat(destPath); err == nil {
 		destName = fmt.Sprintf("%s_%d%s", baseName, time.Now().UnixMilli(), ext)
+		if err := filesystem.ValidateWorkspaceName(destName); err != nil {
+			return nil, err
+		}
 		destPath = filepath.Join(destDir, destName)
 	}
 

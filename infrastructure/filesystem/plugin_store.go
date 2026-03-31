@@ -462,6 +462,9 @@ func validateManifest(manifest coreplugin.PluginManifest) error {
 	if strings.TrimSpace(manifest.ID) == "" {
 		return coreplugin.ErrInvalidManifest
 	}
+	if err := ValidateWorkspaceName(manifest.ID); err != nil {
+		return coreplugin.ErrInvalidManifest
+	}
 
 	if strings.TrimSpace(manifest.Name) == "" {
 		return coreplugin.ErrInvalidManifest

@@ -56,6 +56,19 @@ func validateWorkspacePathForMutation(relativePath string) error {
 	return validateWorkspacePath(relativePath, false)
 }
 
+func ValidateWorkspaceName(name string) error {
+	trimmed := strings.TrimSpace(name)
+	if trimmed == "" {
+		return corefile.ErrInvalidName
+	}
+
+	if strings.ContainsAny(trimmed, `/\`) {
+		return corefile.ErrInvalidName
+	}
+
+	return validateWindowsPathSegment(trimmed)
+}
+
 func validateWindowsPathSegment(segment string) error {
 	if segment == "" {
 		return corefile.ErrInvalidName
