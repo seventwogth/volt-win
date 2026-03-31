@@ -1,4 +1,0 @@
-./config_dir.go
-./settings_store.go
-./volt_store.go
-./settings_store_test.go

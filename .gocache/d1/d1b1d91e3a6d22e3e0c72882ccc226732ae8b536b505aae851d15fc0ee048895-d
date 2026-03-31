@@ -1,7 +1,0 @@
-./assets.go
-./dialogs.go
-./errors.go
-./images.go
-./plugin_process.go
-./runtime.go
-./workspace_paths.go

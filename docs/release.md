@@ -1,5 +1,7 @@
 # Релизы и GitHub Actions
 
+Этот репозиторий поддерживается как Windows-focused fork, поэтому release pipeline в первую очередь ориентирован на Windows-сборку, упаковку и публикацию Windows-артефактов.
+
 ## Где находится workflow
 
 Автоматическая публикация релизов описана в [`.github/workflows/release.yml`](../.github/workflows/release.yml).

@@ -1,77 +1,109 @@
-# VOLT
+# VOLT Windows Fork
 
-Volt — десктопное приложение для работы с локальными markdown-хранилищами. Проект собран на `Wails`, `Go`, `React` и `TypeScript` и ориентирован на локальный сценарий работы без отдельной базы данных и без внешнего сервера.
+This repository is a Windows-focused fork of VOLT.
 
-## Что умеет приложение
+The fork keeps the original app architecture based on `Wails`, `Go`, `React`, and `TypeScript`, but its primary target is Windows development, packaging, and runtime behavior. In particular, this fork carries Windows-specific work around file-system behavior, process launching, packaging, and release artifacts.
 
-- подключать и открывать локальные volt-хранилища
-- читать, создавать, переименовывать и удалять файлы внутри workspace
-- редактировать markdown-заметки
-- искать по имени файла и содержимому markdown
-- расширяться через плагины: команды, slash-меню, страницы, file viewers, toolbar, sidebar и context menu
+## What This Fork Is
 
-## Стек
+- A desktop knowledge-management app for local Markdown workspaces
+- A Windows-first fork with explicit support for Windows path rules, file naming constraints, and packaging
+- A Wails desktop app with Go backend and React frontend
 
-- backend: `Go` + `Wails`
-- frontend: `React 18`, `TypeScript`, `Vite`, `Zustand`, `Tiptap`
-- desktop runtime: `Wails v2`
+## Windows Focus
 
-## Быстрый старт
+Compared to the upstream baseline, this fork is maintained with Windows as the primary environment.
 
-### Требования
+- File and directory operations are validated against Windows naming rules
+- Plugin process launching supports Windows command resolution and batch execution
+- Release artifacts include Windows ZIP and NSIS installer outputs
+- Repository docs and build flow are oriented around Windows development first
 
-- Go `1.26+` по `go.mod`
+## Core Features
+
+- Open and manage local Volt workspaces
+- Create, rename, move, and delete files and folders inside a workspace
+- Edit Markdown notes
+- Search by filename and note content
+- Extend the app through plugins, commands, slash menus, pages, viewers, toolbar actions, sidebar items, and context-menu entries
+
+## Stack
+
+- Backend: `Go` + `Wails`
+- Frontend: `React 18`, `TypeScript`, `Vite`, `Zustand`, `Tiptap`
+- Desktop runtime: `Wails v2`
+
+## Requirements
+
+- Go `1.26+`
 - Node.js `20+`
 - Wails CLI `v2.12.0`
+- Windows development environment is the primary supported target for this fork
 
-### Установка зависимостей
+## Quick Start
 
-Установите Wails CLI:
+Install Wails CLI:
 
 ```bash
 go install github.com/wailsapp/wails/v2/cmd/wails@v2.12.0
 ```
 
-Установите frontend-зависимости:
+Install frontend dependencies:
 
 ```bash
 cd frontend
-npm install
+npm ci
 ```
 
-### Запуск в режиме разработки
-
-Из корня проекта:
+Run in development mode from the repository root:
 
 ```bash
 wails dev
 ```
 
-### Сборка
+Build production assets:
+
+```bash
+cd frontend
+npm run build
+```
+
+Build the desktop app:
 
 ```bash
 wails build
 ```
 
-Сгенерированные артефакты и платформенные файлы лежат в `build/`. Краткое описание каталога есть в [`build/README.md`](build/README.md).
+Generated frontend assets live in `frontend/dist/`.
+Generated application binaries live in `build/bin/`.
+These are build artifacts and must not be committed.
 
-## Структура репозитория
+## Repository Layout
 
-- `bootstrap/` — сборка зависимостей и Wails bindings
-- `commands/` — сценарии приложения
-- `core/` — доменные сущности, контракты и ошибки
-- `infrastructure/` — файловая система, локальное хранение и runtime bridge
-- `interfaces/wailshandler/` — публичный backend API для frontend через Wails
-- `frontend/` — React-приложение, редактор и plugin runtime
-- `docs/` — основная документация по проекту
+- `bootstrap/` - dependency wiring and Wails bindings
+- `commands/` - application use cases
+- `core/` - domain types, contracts, and errors
+- `infrastructure/` - file system, local persistence, and runtime bridge
+- `interfaces/wailshandler/` - backend API exposed to the frontend through Wails
+- `frontend/` - React app, editor UI, and plugin runtime
+- `docs/` - project documentation
+- `build/windows/` - Windows packaging assets, including installer configuration
 
-## Документация
+## Release Notes
 
-Основная точка входа — [`docs/README.md`](docs/README.md).
+The release pipeline is documented in [docs/release.md](docs/release.md).
 
-- [Обзор документации](docs/README.md)
-- [Архитектура](docs/architecture.md)
-- [Бэкенд](docs/backend.md)
-- [Фронтенд](docs/frontend.md)
-- [Плагинная система](docs/plugins.md)
-- [Релизы и GitHub Actions](docs/release.md)
+For this fork, Windows release outputs are especially important:
+
+- `volt-windows-amd64.zip`
+- `volt-windows-amd64-installer.exe`
+
+## Documentation
+
+Start here: [docs/README.md](docs/README.md)
+
+- [Architecture](docs/architecture.md)
+- [Backend](docs/backend.md)
+- [Frontend](docs/frontend.md)
+- [Plugin System](docs/plugins.md)
+- [Release Pipeline](docs/release.md)
